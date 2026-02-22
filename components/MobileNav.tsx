@@ -19,12 +19,10 @@ export function MobileNav() {
 
     const toggle = useCallback(() => setOpen((prev) => !prev), []);
 
-    // Close menu on navigation
     useEffect(() => {
         setOpen(false);
     }, [pathname]);
 
-    // Prevent body scroll when menu is open
     useEffect(() => {
         if (open) {
             document.body.style.overflow = "hidden";
@@ -51,7 +49,7 @@ export function MobileNav() {
             {/* Overlay */}
             {open && (
                 <div
-                    className="fixed inset-0 z-40 bg-foreground/20 backdrop-blur-sm md:hidden"
+                    className="fixed inset-0 z-40 bg-[#08090D]/60 backdrop-blur-sm md:hidden"
                     onClick={() => setOpen(false)}
                     aria-hidden
                 />
@@ -59,10 +57,10 @@ export function MobileNav() {
 
             {/* Slide-out panel */}
             <nav
-                className={`fixed top-0 right-0 z-50 flex h-full w-64 flex-col bg-background shadow-2xl transition-transform duration-300 ease-in-out md:hidden ${open ? "translate-x-0" : "translate-x-full"
+                className={`fixed top-0 right-0 z-50 flex h-full w-64 flex-col bg-[#0C0E15] border-l border-border shadow-2xl transition-transform duration-300 ease-in-out md:hidden ${open ? "translate-x-0" : "translate-x-full"
                     }`}
             >
-                <div className="flex h-16 items-center justify-end px-6">
+                <div className="flex h-[72px] items-center justify-end px-6">
                     <button
                         type="button"
                         className="inline-flex items-center justify-center rounded-md p-2 text-muted-foreground transition-colors hover:text-foreground"
@@ -77,9 +75,9 @@ export function MobileNav() {
                         <li key={href}>
                             <Link
                                 href={href}
-                                className={`block rounded-md px-4 py-3 text-base font-medium transition-colors ${pathname === href
-                                        ? "bg-muted text-foreground"
-                                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                                className={`block rounded-md px-4 py-3 text-sm font-medium uppercase tracking-wide transition-colors ${pathname === href
+                                        ? "bg-[#191C26] text-ice"
+                                        : "text-muted-foreground hover:bg-[#191C26] hover:text-foreground"
                                     }`}
                             >
                                 {label}

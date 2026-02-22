@@ -1,25 +1,25 @@
 import type { Metadata } from "next";
-import { Cormorant_Garamond, Lora } from "next/font/google";
+import { Libre_Caslon_Display, Figtree } from "next/font/google";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { CartProvider } from "@/contexts/CartContext";
 import "./globals.css";
 
-const display = Cormorant_Garamond({
+const display = Libre_Caslon_Display({
   variable: "--font-display",
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+  weight: ["400"],
 });
 
-const body = Lora({
+const body = Figtree({
   variable: "--font-body",
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+  weight: ["300", "400", "500", "600", "700"],
 });
 
 export const metadata: Metadata = {
-  title: "Photography | Events, Galleries & Prints",
-  description: "Professional photography – events, galleries, and high-quality prints. South Africa.",
+  title: "DB Photography | Events, Galleries & Prints",
+  description: "Professional photography – events, galleries, and high-quality prints. Cape Town, South Africa.",
 };
 
 export default function RootLayout({
@@ -28,7 +28,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${display.variable} ${body.variable}`}>
+    <html lang="en" className={`dark ${display.variable} ${body.variable}`}>
       <body className="min-h-screen font-sans antialiased flex flex-col">
         <CartProvider>
           <Header />

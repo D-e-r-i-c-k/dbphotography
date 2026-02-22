@@ -10,6 +10,9 @@ export interface SiteConfig {
   heroImage?: SanityImage;
   heroHeadline?: string;
   heroSubheadline?: string;
+  testimonialQuote?: string;
+  testimonialAuthor?: string;
+  testimonialDetail?: string;
   featuredGallery?: {
     _id: string;
     title?: string;

@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { ProtectedImage } from "./ProtectedImage";
+import { ProtectedCoverImage } from "./ProtectedCoverImage";
+import { HorizontalMasonry } from "./HorizontalMasonry";
 import { GalleryLightbox, type LightboxImage } from "./GalleryLightbox";
-import { AddToCartButton } from "./AddToCartButton";
 
 export interface GalleryImageItem {
   thumbnailUrl: string;
@@ -33,8 +33,12 @@ export function GalleryView({
         src: img.previewUrl,
         alt: img.alt ?? img.caption ?? `${galleryTitle} – Photo ${i + 1}`,
         caption: img.caption,
+        price: img.price,
+        gallerySlug,
+        originalIndex: i,
+        thumbnailUrl: img.thumbnailUrl,
       })),
-    [images, galleryTitle]
+    [images, galleryTitle, gallerySlug]
   );
 
   const openLightbox = (index: number) => {
@@ -50,43 +54,44 @@ export function GalleryView({
 
   return (
     <>
-      <ul className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {images.map((item, i) => (
-          <li
-            key={i}
-            className="overflow-hidden rounded-lg border border-border bg-card shadow-sm transition-shadow hover:shadow-md"
-          >
+      <HorizontalMasonry
+        items={images}
+        renderItem={(item, i) => (
+          <div key={i} className="break-inside-avoid flex w-full justify-center">
             <button
               type="button"
-              className="block w-full cursor-zoom-in text-left"
+              className="group block overflow-hidden transition-all hover:ring-2 hover:ring-primary/50 w-fit h-fit rounded-none"
               onClick={() => openLightbox(i)}
               aria-label={`View ${item.alt ?? item.caption ?? `Photo ${i + 1}`} full size`}
             >
-              <ProtectedImage
-                src={item.thumbnailUrl}
-                alt={item.alt ?? item.caption ?? `Photo ${i + 1}`}
-                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-              />
-            </button>
-            <div className="p-4">
-              {item.caption && (
-                <p className="text-sm text-foreground">{item.caption}</p>
-              )}
-              <div className="mt-3 flex flex-col gap-2">
-                {item.price != null && (
-                  <AddToCartButton
-                    gallerySlug={gallerySlug}
-                    imageIndex={i}
-                    title={item.caption ?? `Photo ${i + 1}`}
-                    price={item.price}
-                    previewImageUrl={item.thumbnailUrl}
-                  />
-                )}
+              <div className="relative w-fit h-fit overflow-hidden flex justify-center items-center">
+                <ProtectedCoverImage
+                  src={item.thumbnailUrl}
+                  alt={item.alt ?? item.caption ?? `Photo ${i + 1}`}
+                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                  className="!w-auto !h-auto max-w-full max-h-[60vh] transition-transform duration-500 group-hover:scale-[1.02]"
+                  containerClassName="w-fit h-fit flex justify-center items-center"
+                  fill={false}
+                />
+                {/* Repeating watermark overlay */}
+                <div
+                  className="pointer-events-none absolute inset-0 grid grid-cols-3 grid-rows-4 items-center justify-items-center overflow-hidden opacity-15"
+                  aria-hidden
+                >
+                  {Array.from({ length: 12 }).map((_, w) => (
+                    <span
+                      key={w}
+                      className="font-display -rotate-[25deg] whitespace-nowrap text-sm sm:text-base font-semibold tracking-[0.25em] text-white drop-shadow-md"
+                    >
+                      PREVIEW
+                    </span>
+                  ))}
+                </div>
               </div>
-            </div>
-          </li>
-        ))}
-      </ul>
+            </button>
+          </div>
+        )}
+      />
 
       <GalleryLightbox
         images={lightboxImages}

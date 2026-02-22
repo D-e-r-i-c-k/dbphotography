@@ -4,87 +4,103 @@ import type { RecentGallery } from "@/lib/sanity/types";
 import Link from "next/link";
 import { urlFor } from "@/lib/sanity/image";
 import { ProtectedCoverImage } from "@/components/gallery/ProtectedCoverImage";
+import { HorizontalMasonry } from "@/components/gallery/HorizontalMasonry";
 
 export const metadata = {
-  title: "Galleries | Photography",
+  title: "Galleries | DB Photography",
   description: "Browse photo galleries from events and sessions.",
 };
 
 export default async function GalleriesPage() {
   const galleries =
-    hasSanityProject ?
-      await client.fetch<RecentGallery[]>(allGalleriesQuery)
+    hasSanityProject
+      ? await client.fetch<RecentGallery[]>(allGalleriesQuery)
       : ([] as RecentGallery[]);
 
   return (
-    <div className="animate-fade-in-up mx-auto max-w-6xl px-6 py-12">
-      <h1 className="font-display mb-10 text-3xl font-semibold tracking-tight text-foreground">
-        Galleries
-      </h1>
-      {galleries && galleries.length > 0 ? (
-        <ul className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
-          {galleries.map((gallery) => {
-            const slug = gallery.slug?.current;
-            return (
-              <li key={gallery._id}>
-                {slug ? (
-                  <Link
-                    href={`/galleries/${slug}`}
-                    className="hover-lift block overflow-hidden rounded-lg border border-border bg-card shadow-sm"
-                  >
-                    <div className="aspect-[4/3] overflow-hidden bg-muted">
-                      {gallery.coverImage?.asset && (
-                        <ProtectedCoverImage
-                          src={urlFor(gallery.coverImage, { w: 600, q: 80 })}
-                          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                          containerClassName="h-full w-full"
-                        />
-                      )}
+    <div className="animate-fade-in-up pt-[72px]">
+      {/* Page header */}
+      <div className="border-b border-[rgba(255,255,255,0.05)] py-14 bg-[#0C0E15]">
+        <div className="mx-auto max-w-[1400px] px-6 lg:px-10">
+          <p className="text-[0.65rem] font-semibold tracking-[0.3em] uppercase text-[#94B8D0] mb-3">Portfolio</p>
+          <h1 className="font-display text-4xl text-foreground sm:text-5xl">
+            Galleries
+          </h1>
+        </div>
+      </div>
+
+      <div className="mx-auto max-w-[1400px] px-6 lg:px-10 py-12">
+        {galleries && galleries.length > 0 ? (
+          <HorizontalMasonry
+            items={galleries}
+            renderItem={(gallery) => {
+              const slug = gallery.slug?.current;
+              return (
+                <div key={gallery._id} className="break-inside-avoid flex w-full justify-center">
+                  {slug ? (
+                    <Link
+                      href={`/galleries/${slug}`}
+                      className="group block overflow-hidden w-fit h-fit rounded-none"
+                    >
+                      <div className="relative w-fit h-fit overflow-hidden flex justify-center items-center">
+                        {gallery.coverImage?.asset && (
+                          <ProtectedCoverImage
+                            src={urlFor(gallery.coverImage, { w: 600, q: 80 })}
+                            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                            className="!w-auto !h-auto max-w-full max-h-[60vh]"
+                            containerClassName="w-fit h-fit img-desat group-hover:saturate-100 transition-all duration-700 flex justify-center items-center"
+                            fill={false}
+                          />
+                        )}
+                        {/* Hover info overlay */}
+                        <div className="absolute inset-0 flex flex-col justify-end p-5 opacity-0 group-hover:opacity-100 transition-opacity duration-400" style={{ background: "linear-gradient(to top, rgba(8, 9, 13, 0.85) 0%, transparent 55%)" }}>
+                          <p className="font-display text-[1.05rem] text-foreground translate-y-2 group-hover:translate-y-0 transition-transform duration-400">
+                            {gallery.title ?? "Untitled gallery"}
+                          </p>
+                          {gallery.imageCount != null && (
+                            <p className="text-[0.75rem] text-[#94B8D0] mt-1 translate-y-2 group-hover:translate-y-0 transition-transform duration-400 delay-75">
+                              {gallery.imageCount} photo{gallery.imageCount !== 1 ? "s" : ""}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </Link>
+                  ) : (
+                    <div className="group block overflow-hidden w-fit h-fit rounded-none">
+                      <div className="relative w-fit h-fit overflow-hidden flex justify-center items-center">
+                        {gallery.coverImage?.asset && (
+                          <ProtectedCoverImage
+                            src={urlFor(gallery.coverImage, { w: 600, q: 80 })}
+                            sizes="33vw"
+                            className="!w-auto !h-auto max-w-full max-h-[60vh]"
+                            containerClassName="w-fit h-fit img-desat group-hover:saturate-100 transition-all duration-700 flex justify-center items-center"
+                            fill={false}
+                          />
+                        )}
+                        {/* Hover info overlay */}
+                        <div className="absolute inset-0 flex flex-col justify-end p-5 opacity-0 group-hover:opacity-100 transition-opacity duration-400" style={{ background: "linear-gradient(to top, rgba(8, 9, 13, 0.85) 0%, transparent 55%)" }}>
+                          <p className="font-display text-[1.05rem] text-foreground translate-y-2 group-hover:translate-y-0 transition-transform duration-400">
+                            {gallery.title ?? "Untitled gallery"}
+                          </p>
+                          {gallery.imageCount != null && (
+                            <p className="text-[0.75rem] text-[#94B8D0] mt-1 translate-y-2 group-hover:translate-y-0 transition-transform duration-400 delay-75">
+                              {gallery.imageCount} photo{gallery.imageCount !== 1 ? "s" : ""}
+                            </p>
+                          )}
+                        </div>
+                      </div>
                     </div>
-                    <div className="p-4">
-                      <h2 className="font-display font-semibold text-foreground">
-                        {gallery.title ?? "Untitled gallery"}
-                      </h2>
-                      {gallery.event?.title && (
-                        <p className="mt-1 text-sm text-muted-foreground">
-                          {gallery.event.title}
-                        </p>
-                      )}
-                      {gallery.imageCount != null && (
-                        <p className="mt-0.5 text-sm text-muted-foreground">
-                          {gallery.imageCount} photo
-                          {gallery.imageCount !== 1 ? "s" : ""}
-                        </p>
-                      )}
-                    </div>
-                  </Link>
-                ) : (
-                  <div className="hover-lift overflow-hidden rounded-lg border border-border bg-card">
-                    <div className="aspect-[4/3] overflow-hidden bg-muted">
-                      {gallery.coverImage?.asset && (
-                        <ProtectedCoverImage
-                          src={urlFor(gallery.coverImage, { w: 600, q: 80 })}
-                          sizes="33vw"
-                          containerClassName="h-full w-full"
-                        />
-                      )}
-                    </div>
-                    <div className="p-4">
-                      <h2 className="font-display font-semibold text-foreground">
-                        {gallery.title ?? "Untitled gallery"}
-                      </h2>
-                    </div>
-                  </div>
-                )}
-              </li>
-            );
-          })}
-        </ul>
-      ) : (
-        <p className="text-muted-foreground">
-          No galleries yet. Add galleries in Sanity Studio.
-        </p>
-      )}
+                  )}
+                </div>
+              );
+            }}
+          />
+        ) : (
+          <p className="text-muted-foreground">
+            No galleries yet. Add galleries in Sanity Studio.
+          </p>
+        )}
+      </div>
     </div>
   );
 }

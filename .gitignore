@@ -19,6 +19,7 @@
 
 # production
 /build
+/redesign
 
 # misc
 .DS_Store

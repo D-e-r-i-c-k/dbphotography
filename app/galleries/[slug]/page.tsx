@@ -29,15 +29,15 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }) {
   if (!hasSanityProject)
-    return { title: "Gallery | Photography" };
+    return { title: "Gallery | DB Photography" };
   const { slug } = await params;
   const gallery = await client.fetch<Gallery | null>(galleryBySlugQuery, {
     slug,
   });
   return {
     title: gallery?.title
-      ? `${gallery.title} | Galleries | Photography`
-      : "Gallery | Photography",
+      ? `${gallery.title} | Galleries | DB Photography`
+      : "Gallery | DB Photography",
   };
 }
 
@@ -55,40 +55,44 @@ export default async function GalleryPage({
 
   const defaultPrice = gallery.defaultPrice;
 
-  const images = (gallery.images ?? []).map((item) => ({
-    thumbnailUrl: item.asset ? thumbnailUrlFor(item) : "",
-    previewUrl: item.asset ? previewUrlFor(item) : "",
-    caption: item.caption,
-    alt: item.alt,
-    price: item.price ?? defaultPrice,
-  })).filter((img) => img.thumbnailUrl);
+  const images = (gallery.images ?? [])
+    .map((item) => ({
+      thumbnailUrl: item.asset ? thumbnailUrlFor(item) : "",
+      previewUrl: item.asset ? previewUrlFor(item) : "",
+      caption: item.caption,
+      alt: item.alt,
+      price: item.price ?? defaultPrice,
+    }))
+    .filter((img) => img.thumbnailUrl);
 
   return (
-    <div className="animate-fade-in-up mx-auto max-w-6xl px-6 py-12">
-      <Link
-        href="/galleries"
-        className="mb-8 inline-block text-sm text-muted-foreground underline-offset-4 hover:underline"
-      >
-        ← All galleries
-      </Link>
-      <header className="mb-10">
-        <h1 className="font-display text-3xl font-semibold tracking-tight text-foreground">
-          {gallery.title ?? "Untitled gallery"}
-        </h1>
-        {gallery.event?.slug?.current && (
-          <Link
-            href={`/events/${gallery.event.slug.current}`}
-            className="mt-2 inline-block text-muted-foreground hover:underline"
-          >
-            Event: {gallery.event.title ?? "Untitled"}
-          </Link>
-        )}
-      </header>
-      <GalleryView
-        gallerySlug={slug}
-        galleryTitle={gallery.title ?? "Gallery"}
-        images={images}
-      />
+    <div className="animate-fade-in-up pt-[72px]">
+      <div className="mx-auto max-w-[1400px] px-6 lg:px-10 py-12">
+        <Link
+          href="/galleries"
+          className="mb-8 inline-block text-[0.8rem] text-muted-foreground transition-colors hover:text-[#94B8D0]"
+        >
+          ← All galleries
+        </Link>
+        <header className="mb-10">
+          <h1 className="font-display text-3xl text-foreground sm:text-4xl">
+            {gallery.title ?? "Untitled gallery"}
+          </h1>
+          {gallery.event?.slug?.current && (
+            <Link
+              href={`/events/${gallery.event.slug.current}`}
+              className="mt-2 inline-block text-[0.85rem] text-muted-foreground transition-colors hover:text-ice"
+            >
+              Event: {gallery.event.title ?? "Untitled"}
+            </Link>
+          )}
+        </header>
+        <GalleryView
+          gallerySlug={slug}
+          galleryTitle={gallery.title ?? "Gallery"}
+          images={images}
+        />
+      </div>
     </div>
   );
 }

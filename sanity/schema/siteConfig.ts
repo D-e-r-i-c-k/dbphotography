@@ -7,6 +7,7 @@ export const siteConfigType = defineType({
   groups: [
     { name: "hero", title: "Hero" },
     { name: "home", title: "Home page" },
+    { name: "testimonial", title: "Testimonial" },
     { name: "general", title: "General" },
   ],
   fields: [
@@ -15,7 +16,7 @@ export const siteConfigType = defineType({
       title: "Site title",
       type: "string",
       group: "general",
-      initialValue: "Photography",
+      initialValue: "DB Photography",
     }),
     defineField({
       name: "heroImage",
@@ -42,6 +43,27 @@ export const siteConfigType = defineType({
       type: "reference",
       to: [{ type: "gallery" }],
       group: "home",
+    }),
+    defineField({
+      name: "testimonialQuote",
+      title: "Quote text",
+      type: "text",
+      group: "testimonial",
+      description: "The testimonial quote to display on the homepage.",
+    }),
+    defineField({
+      name: "testimonialAuthor",
+      title: "Author name",
+      type: "string",
+      group: "testimonial",
+      description: 'e.g. "Lana M."',
+    }),
+    defineField({
+      name: "testimonialDetail",
+      title: "Author detail",
+      type: "string",
+      group: "testimonial",
+      description: 'e.g. "Bride, Franschhoek Estate Wedding"',
     }),
   ],
   preview: {

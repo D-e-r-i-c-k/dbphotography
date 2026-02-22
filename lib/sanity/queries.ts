@@ -9,6 +9,9 @@ export const siteConfigQuery = `
     heroImage,
     heroHeadline,
     heroSubheadline,
+    testimonialQuote,
+    testimonialAuthor,
+    testimonialDetail,
     featuredGallery-> {
       _id,
       title,

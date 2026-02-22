@@ -9,11 +9,16 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { AddToCartButton } from "./AddToCartButton";
 
 export interface LightboxImage {
   src: string;
   alt: string;
   caption?: string;
+  price?: number;
+  gallerySlug?: string;
+  originalIndex?: number;
+  thumbnailUrl?: string;
 }
 
 interface GalleryLightboxProps {
@@ -114,12 +119,32 @@ export function GalleryLightbox({
             <ChevronRight className="h-8 w-8" />
           </Button>
         </div>
-        <div className="border-t border-white/20 px-4 py-2 text-center text-sm text-white/90">
-          <span>
-            {index + 1} / {images.length}
-          </span>
-          {current.caption && (
-            <p className="mt-1 text-white/70">{current.caption}</p>
+        <div className="flex w-full items-center justify-between border-t border-white/20 px-6 py-4 text-sm text-white/90">
+          <div className="flex flex-col">
+            <span className="font-medium text-white">
+              {index + 1} / {images.length}
+            </span>
+            {current.caption && (
+              <p className="mt-1 text-white/70">{current.caption}</p>
+            )}
+            {current.price != null && (
+              <p className="mt-1 font-semibold text-primary-foreground">
+                ${current.price.toFixed(2)}
+              </p>
+            )}
+          </div>
+
+          {/* Action Bar */}
+          {current.price != null && current.gallerySlug && current.originalIndex != null && current.thumbnailUrl && (
+            <div className="flex-shrink-0 ml-4">
+              <AddToCartButton
+                gallerySlug={current.gallerySlug}
+                imageIndex={current.originalIndex}
+                title={current.caption ?? current.alt}
+                price={current.price}
+                previewImageUrl={current.thumbnailUrl}
+              />
+            </div>
           )}
         </div>
       </DialogContent>

@@ -72,7 +72,7 @@ function SuccessContent() {
 
     if (!token) {
         return (
-            <div className="animate-fade-in-up mx-auto flex max-w-lg flex-col items-center px-6 py-20 text-center">
+            <div className="animate-fade-in-up mx-auto flex max-w-lg flex-col items-center px-6 py-20 pt-[92px] text-center">
                 <CheckCircle2 className="h-16 w-16 text-green-500" />
                 <h1 className="font-display mt-6 text-3xl font-semibold tracking-tight text-foreground">
                     Payment successful!
@@ -91,7 +91,7 @@ function SuccessContent() {
     }
 
     return (
-        <div className="animate-fade-in-up mx-auto flex max-w-lg flex-col items-center px-6 py-20 text-center">
+        <div className="animate-fade-in-up mx-auto flex max-w-lg flex-col items-center px-6 py-20 pt-[92px] text-center">
             <CheckCircle2 className="h-16 w-16 text-green-500" />
             <h1 className="font-display mt-6 text-3xl font-semibold tracking-tight text-foreground">
                 Payment successful!

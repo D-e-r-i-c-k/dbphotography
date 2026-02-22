@@ -10,6 +10,7 @@ interface ProtectedCoverImageProps {
     priority?: boolean;
     className?: string;
     containerClassName?: string;
+    fill?: boolean;
 }
 
 /**
@@ -21,8 +22,9 @@ export function ProtectedCoverImage({
     alt = "",
     sizes,
     priority,
-    className = "object-cover",
+    className = "",
     containerClassName = "",
+    fill = true,
 }: ProtectedCoverImageProps) {
     const handleContextMenu = useCallback((e: React.MouseEvent) => {
         e.preventDefault();
@@ -30,19 +32,32 @@ export function ProtectedCoverImage({
 
     return (
         <div
-            className={`relative select-none overflow-hidden ${containerClassName}`}
+            className={`relative select-none ${containerClassName}`}
             onContextMenu={handleContextMenu}
         >
-            <Image
-                src={src}
-                alt={alt}
-                fill
-                className={`pointer-events-none ${className}`}
-                sizes={sizes}
-                priority={priority}
-                draggable={false}
-                style={{ userSelect: "none" }}
-            />
+            {fill ? (
+                <Image
+                    src={src}
+                    alt={alt}
+                    fill
+                    className={`pointer-events-none object-cover ${className}`}
+                    sizes={sizes}
+                    priority={priority}
+                    draggable={false}
+                    style={{ userSelect: "none" }}
+                />
+            ) : (
+                /* eslint-disable-next-line @next/next/no-img-element */
+                <img
+                    src={src}
+                    alt={alt}
+                    className={`block w-full h-auto pointer-events-none object-cover ${className}`}
+                    draggable={false}
+                    style={{ userSelect: "none" }}
+                    decoding="async"
+                    loading={priority ? "eager" : "lazy"}
+                />
+            )}
         </div>
     );
 }

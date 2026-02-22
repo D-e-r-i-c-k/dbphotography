@@ -1,7 +1,6 @@
 import { client, hasSanityProject } from "@/lib/sanity/client";
 import { eventBySlugQuery } from "@/lib/sanity/queries";
 import type { UpcomingEvent } from "@/lib/sanity/types";
-import Image from "next/image";
 import Link from "next/link";
 import { urlFor } from "@/lib/sanity/image";
 import { ProtectedCoverImage } from "@/components/gallery/ProtectedCoverImage";
@@ -12,14 +11,15 @@ export async function generateMetadata({
 }: {
   params: Promise<{ slug: string }>;
 }) {
-  if (!hasSanityProject)
-    return { title: "Event | Photography" };
+  if (!hasSanityProject) return { title: "Event | DB Photography" };
   const { slug } = await params;
   const event = await client.fetch<UpcomingEvent | null>(eventBySlugQuery, {
     slug,
   });
   return {
-    title: event?.title ? `${event.title} | Events | Photography` : "Event | Photography",
+    title: event?.title
+      ? `${event.title} | Events | DB Photography`
+      : "Event | DB Photography",
     description: event?.description ?? undefined,
   };
 }
@@ -47,47 +47,54 @@ export default async function EventPage({
   const gallerySlug = event.gallery?.slug?.current;
 
   return (
-    <div className="animate-fade-in-up mx-auto max-w-3xl px-6 py-12">
-      <Link
-        href="/events"
-        className="mb-8 inline-block text-sm text-muted-foreground underline-offset-4 hover:underline"
-      >
-        ← All events
-      </Link>
-      <article>
-        {event.coverImage?.asset && (
-          <ProtectedCoverImage
-            src={urlFor(event.coverImage, { w: 1200, q: 85 })}
-            priority
-            sizes="(max-width: 768px) 100vw, 768px"
-            containerClassName="aspect-[16/10] rounded-lg"
-          />
-        )}
-        <header className="mt-8">
-          <h1 className="font-display text-3xl font-semibold tracking-tight text-foreground">
-            {event.title ?? "Untitled event"}
-          </h1>
-          {dateStr && (
-            <p className="mt-2 text-lg text-muted-foreground">{dateStr}</p>
+    <div className="animate-fade-in-up pt-[72px]">
+      <div className="mx-auto max-w-3xl px-6 py-12">
+        <Link
+          href="/events"
+          className="mb-8 inline-block text-[0.8rem] text-muted-foreground transition-colors hover:text-[#94B8D0]"
+        >
+          ← All events
+        </Link>
+        <article>
+          {event.coverImage?.asset && (
+            <ProtectedCoverImage
+              src={urlFor(event.coverImage, { w: 1200, q: 85 })}
+              priority
+              sizes="(max-width: 768px) 100vw, 768px"
+              containerClassName="aspect-[16/10] rounded-xl overflow-hidden"
+            />
           )}
-          {event.venue && (
-            <p className="mt-1 text-muted-foreground">{event.venue}</p>
+          <header className="mt-8">
+            <h1 className="font-display text-3xl text-foreground sm:text-4xl">
+              {event.title ?? "Untitled event"}
+            </h1>
+            {dateStr && (
+              <p className="mt-3 text-[0.85rem] text-[#94B8D0]">{dateStr}</p>
+            )}
+            {event.venue && (
+              <p className="mt-1 text-[0.85rem] text-muted-foreground">
+                {event.venue}
+              </p>
+            )}
+          </header>
+          {event.description && (
+            <div className="mt-6 text-[0.95rem] leading-relaxed text-foreground/85">
+              {event.description}
+            </div>
           )}
-        </header>
-        {event.description && (
-          <div className="mt-6 text-foreground/90">{event.description}</div>
-        )}
-        {gallerySlug && (
-          <div className="mt-10">
-            <Link
-              href={`/galleries/${gallerySlug}`}
-              className="inline-flex h-12 items-center justify-center rounded-full bg-primary px-6 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
-            >
-              View gallery
-            </Link>
-          </div>
-        )}
-      </article>
+          {gallerySlug && (
+            <div className="mt-10">
+              <Link
+                href={`/galleries/${gallerySlug}`}
+                className="inline-flex h-12 items-center justify-center rounded-md px-7 text-[0.78rem] font-semibold uppercase tracking-[0.12em] transition-all hover:translate-y-[-2px]"
+                style={{ background: "#94B8D0", color: "#08090D" }}
+              >
+                View Gallery
+              </Link>
+            </div>
+          )}
+        </article>
+      </div>
     </div>
   );
 }

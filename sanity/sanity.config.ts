@@ -3,7 +3,7 @@ import { structureTool } from "sanity/structure";
 import { schemaTypes } from "./schema";
 
 // Sanity Studio only injects SANITY_STUDIO_* vars into the browser bundle – use those in sanity/.env
-const projectId = process.env.SANITY_STUDIO_PROJECT_ID || process.env.NEXT_PUBLIC_SANITY_PROJECT_ID || "";
+const projectId = process.env.SANITY_STUDIO_PROJECT_ID || process.env.NEXT_PUBLIC_SANITY_PROJECT_ID || "cex636bq";
 
 if (!projectId) {
   throw new Error(

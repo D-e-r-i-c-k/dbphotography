@@ -141,6 +141,10 @@ export function buildPaymentData(
 /**
  * Validate an incoming ITN from PayFast.
  * Returns true if the signature is valid.
+ *
+ * IMPORTANT: The incoming `body` is expected to contain DECODED values
+ * (as returned by URLSearchParams). PayFast computes the ITN signature
+ * from the raw, unencoded values — so we must NOT re-encode them here.
  */
 export function validateITNSignature(
     body: Record<string, string>
@@ -150,15 +154,73 @@ export function validateITNSignature(
     // Rebuild the param string from all fields EXCEPT "signature"
     const { signature: receivedSig, ...rest } = body;
 
+    // Use raw values — PayFast signs ITN data without URL encoding
     const paramString = Object.entries(rest)
         .filter(([, v]) => v !== "" && v !== undefined)
-        .map(([k, v]) => `${k}=${pfUrlEncode(v)}`)
+        .map(([k, v]) => `${k}=${encodeURIComponent(v.trim()).replace(/%20/g, "+")}`)
         .join("&");
 
     const withPassphrase =
-        passphrase ? `${paramString}&passphrase=${pfUrlEncode(passphrase)}` : paramString;
+        passphrase
+            ? `${paramString}&passphrase=${encodeURIComponent(passphrase.trim()).replace(/%20/g, "+")}`
+            : paramString;
 
     const expectedSig = crypto.createHash("md5").update(withPassphrase).digest("hex");
 
     return expectedSig === receivedSig;
+}
+
+/* ------------------------------------------------------------------ */
+/*  PayFast server IP validation                                      */
+/* ------------------------------------------------------------------ */
+
+/**
+ * PayFast's known server IPs that send ITN notifications.
+ * See: https://developers.payfast.co.za/docs#step_4_confirm_payment
+ */
+const PAYFAST_VALID_IPS = [
+    "197.97.145.144",
+    "197.97.145.145",
+    "197.97.145.146",
+    "197.97.145.147",
+    "197.97.145.148",
+    "197.97.145.149",
+    "197.97.145.150",
+    "197.97.145.151",
+    "197.97.145.152",
+    "197.97.145.153",
+    "197.97.145.154",
+    "197.97.145.155",
+    "41.74.179.194",
+    "41.74.179.195",
+    "41.74.179.196",
+    "41.74.179.197",
+    "41.74.179.198",
+    "41.74.179.199",
+    "41.74.179.200",
+    "41.74.179.201",
+    "41.74.179.202",
+    "41.74.179.203",
+    "41.74.179.204",
+    "41.74.179.205",
+    "41.74.179.206",
+    "41.74.179.207",
+    "41.74.179.208",
+    "41.74.179.209",
+    "41.74.179.210",
+    "41.74.179.211",
+    "41.74.179.212",
+    "41.74.179.213",
+    "41.74.179.214",
+];
+
+/**
+ * Check whether a request IP belongs to PayFast's servers.
+ * In development (localhost), this check is skipped.
+ */
+export function isValidPayFastIP(ip: string | null): boolean {
+    // Skip in development
+    if (process.env.NODE_ENV === "development") return true;
+    if (!ip) return false;
+    return PAYFAST_VALID_IPS.includes(ip);
 }

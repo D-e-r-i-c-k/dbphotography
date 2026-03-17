@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { validateITNSignature } from "@/lib/payfast";
+import { validateITNSignature, isValidPayFastIP } from "@/lib/payfast";
 
 /**
  * POST /api/payfast-notify
@@ -8,13 +8,31 @@ import { validateITNSignature } from "@/lib/payfast";
  * after a payment is completed (or fails).
  *
  * This endpoint:
- * 1. Parses the URL-encoded form body
- * 2. Validates the signature
- * 3. Checks the payment status
- * 4. Logs the result (order storage / download delivery is a future step)
+ * 1. Validates the source IP is from PayFast
+ * 2. Parses the URL-encoded form body
+ * 3. Validates the signature
+ * 4. Checks the payment status
+ * 5. Logs the result (order storage / download delivery is a future step)
  */
 export async function POST(request: NextRequest) {
     try {
+        // Step 1: Validate source IP
+        const forwardedFor = request.headers.get("x-forwarded-for");
+        const requestIP = forwardedFor
+            ? forwardedFor.split(",")[0].trim()
+            : null;
+
+        if (!isValidPayFastIP(requestIP)) {
+            console.error(
+                `[PayFast ITN] Request from untrusted IP: ${requestIP}`
+            );
+            return NextResponse.json(
+                { error: "Unauthorized" },
+                { status: 403 }
+            );
+        }
+
+        // Step 2: Parse body
         const text = await request.text();
         const params = new URLSearchParams(text);
         const body: Record<string, string> = {};
@@ -22,10 +40,17 @@ export async function POST(request: NextRequest) {
             body[key] = value;
         });
 
-        // Validate signature
+        console.log(
+            `[PayFast ITN] Received notification from ${requestIP} for payment ${body.m_payment_id || "unknown"}`
+        );
+
+        // Step 3: Validate signature
         const isValid = validateITNSignature(body);
         if (!isValid) {
-            console.error("[PayFast ITN] Invalid signature", body);
+            console.error("[PayFast ITN] Invalid signature", {
+                paymentId: body.m_payment_id,
+                status: body.payment_status,
+            });
             return NextResponse.json({ error: "Invalid signature" }, { status: 403 });
         }
 
@@ -52,3 +77,4 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: "Internal error" }, { status: 500 });
     }
 }
+

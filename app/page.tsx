@@ -6,10 +6,13 @@ import {
   upcomingEventsQuery,
   recentGalleriesQuery,
 } from "@/lib/sanity/queries";
-import { urlFor } from "@/lib/sanity/image";
+import { urlFor, blurUrlFor } from "@/lib/sanity/image";
 import { ProtectedCoverImage } from "@/components/gallery/ProtectedCoverImage";
 import { HorizontalMasonry } from "@/components/gallery/HorizontalMasonry";
 import type { SiteConfig, UpcomingEvent, RecentGallery } from "@/lib/sanity/types";
+
+/** Map of image _ref → base64 blur data URL */
+type BlurMap = Map<string, string>;
 
 async function getHomeData() {
   if (!hasSanityProject) {
@@ -17,6 +20,7 @@ async function getHomeData() {
       siteConfig: null,
       upcomingEvents: [] as UpcomingEvent[],
       recentGalleries: [] as RecentGallery[],
+      blurMap: new Map() as BlurMap,
     };
   }
   try {
@@ -25,18 +29,51 @@ async function getHomeData() {
       client.fetch<UpcomingEvent[]>(upcomingEventsQuery),
       client.fetch<RecentGallery[]>(recentGalleriesQuery),
     ]);
-    return { siteConfig, upcomingEvents, recentGalleries };
+
+    // Generate blur placeholders for all cover images in parallel
+    const blurMap: BlurMap = new Map();
+    const imageSources: { ref: string; source: { asset: { _ref: string } } }[] = [];
+
+    if (siteConfig?.heroImage?.asset?._ref) {
+      imageSources.push({ ref: siteConfig.heroImage.asset._ref, source: siteConfig.heroImage as { asset: { _ref: string } } });
+    }
+    for (const event of upcomingEvents ?? []) {
+      if (event.coverImage?.asset?._ref) {
+        imageSources.push({ ref: event.coverImage.asset._ref, source: event.coverImage as { asset: { _ref: string } } });
+      }
+    }
+    for (const gallery of recentGalleries ?? []) {
+      if (gallery.coverImage?.asset?._ref) {
+        imageSources.push({ ref: gallery.coverImage.asset._ref, source: gallery.coverImage as { asset: { _ref: string } } });
+      }
+    }
+
+    // Fetch all blur placeholders in parallel (tiny 20px images)
+    const blurResults = await Promise.allSettled(
+      imageSources.map(async ({ ref, source }) => {
+        const dataUrl = await blurUrlFor(source);
+        return { ref, dataUrl };
+      })
+    );
+    for (const result of blurResults) {
+      if (result.status === "fulfilled" && result.value.dataUrl) {
+        blurMap.set(result.value.ref, result.value.dataUrl);
+      }
+    }
+
+    return { siteConfig, upcomingEvents, recentGalleries, blurMap };
   } catch {
     return {
       siteConfig: null,
       upcomingEvents: [] as UpcomingEvent[],
       recentGalleries: [] as RecentGallery[],
+      blurMap: new Map() as BlurMap,
     };
   }
 }
 
 export default async function HomePage() {
-  const { siteConfig, upcomingEvents, recentGalleries } = await getHomeData();
+  const { siteConfig, upcomingEvents, recentGalleries, blurMap } = await getHomeData();
   const heroImage = siteConfig?.heroImage;
   const heroHeadline = siteConfig?.heroHeadline ?? "Moments Frozen in Light";
   const heroSubheadline =
@@ -137,7 +174,7 @@ export default async function HomePage() {
             {upcomingEvents && upcomingEvents.length > 0 ? (
               <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                 {upcomingEvents.map((event) => (
-                  <EventCard key={event._id} event={event} />
+                  <EventCard key={event._id} event={event} blurMap={blurMap} />
                 ))}
               </div>
             ) : (
@@ -189,7 +226,7 @@ export default async function HomePage() {
             {recentGalleries && recentGalleries.length > 0 ? (
               <HorizontalMasonry
                 items={recentGalleries}
-                renderItem={(gallery) => <GalleryCard key={gallery._id} gallery={gallery} />}
+                renderItem={(gallery) => <GalleryCard key={gallery._id} gallery={gallery} blurMap={blurMap} />}
               />
             ) : (
               <p className="text-muted-foreground">
@@ -231,7 +268,7 @@ export default async function HomePage() {
 }
 
 /* ─── Event Card ─── */
-function EventCard({ event }: { event: UpcomingEvent }) {
+function EventCard({ event, blurMap }: { event: UpcomingEvent; blurMap: BlurMap }) {
   const slug = event.slug?.current;
   const dateStr = event.date
     ? new Date(event.date).toLocaleDateString("en-ZA", {
@@ -249,6 +286,7 @@ function EventCard({ event }: { event: UpcomingEvent }) {
             src={urlFor(event.coverImage, { w: 600, q: 80 })}
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
             containerClassName="h-full w-full img-desat group-hover:saturate-100 transition-transform duration-700"
+            blurDataURL={event.coverImage?.asset?._ref ? blurMap.get(event.coverImage.asset._ref) : undefined}
           />
         )}
         {/* Date badge */}
@@ -292,7 +330,7 @@ function EventCard({ event }: { event: UpcomingEvent }) {
 }
 
 /* ─── Gallery Card ─── */
-function GalleryCard({ gallery, className }: { gallery: RecentGallery; className?: string }) {
+function GalleryCard({ gallery, className, blurMap }: { gallery: RecentGallery; className?: string; blurMap: BlurMap }) {
   const slug = gallery.slug?.current;
   const content = (
     <div className="relative w-fit h-fit overflow-hidden flex items-center justify-center">
@@ -303,6 +341,7 @@ function GalleryCard({ gallery, className }: { gallery: RecentGallery; className
           className="!w-auto !h-auto max-w-full max-h-[60vh]"
           containerClassName="w-fit h-fit flex justify-center items-center img-desat group-hover:saturate-100 transition-all duration-700"
           fill={false}
+          blurDataURL={gallery.coverImage?.asset?._ref ? blurMap.get(gallery.coverImage.asset._ref) : undefined}
         />
       )}
       {/* Hover info overlay */}

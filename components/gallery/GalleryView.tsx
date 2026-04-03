@@ -8,6 +8,7 @@ import { GalleryLightbox, type LightboxImage } from "./GalleryLightbox";
 export interface GalleryImageItem {
   thumbnailUrl: string;
   previewUrl: string;
+  blurDataURL?: string;
   caption?: string;
   alt?: string;
   price?: number;
@@ -72,6 +73,7 @@ export function GalleryView({
                   className="!w-auto !h-auto max-w-full max-h-[60vh] transition-transform duration-500 group-hover:scale-[1.02]"
                   containerClassName="w-fit h-fit flex justify-center items-center"
                   fill={false}
+                  blurDataURL={item.blurDataURL}
                 />
                 {/* Repeating watermark overlay */}
                 <div

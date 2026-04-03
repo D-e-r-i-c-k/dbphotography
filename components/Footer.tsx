@@ -13,7 +13,9 @@ export function Footer() {
               DB <span className="text-[#94B8D0]">Photography</span>
             </p>
             <p className="mt-2 text-[0.82rem] text-muted-foreground">
-              Professional event photography. Cape Town, South Africa.
+              Professional event photography.
+              <br />
+              Cape Town, South Africa.
             </p>
           </div>
           {/* Navigate */}

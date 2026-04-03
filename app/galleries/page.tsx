@@ -2,7 +2,7 @@ import { client, hasSanityProject } from "@/lib/sanity/client";
 import { allGalleriesQuery } from "@/lib/sanity/queries";
 import type { RecentGallery } from "@/lib/sanity/types";
 import Link from "next/link";
-import { urlFor } from "@/lib/sanity/image";
+import { urlFor, blurUrlFor } from "@/lib/sanity/image";
 import { ProtectedCoverImage } from "@/components/gallery/ProtectedCoverImage";
 import { HorizontalMasonry } from "@/components/gallery/HorizontalMasonry";
 
@@ -16,6 +16,21 @@ export default async function GalleriesPage() {
     hasSanityProject
       ? await client.fetch<RecentGallery[]>(allGalleriesQuery)
       : ([] as RecentGallery[]);
+
+  // Generate blur placeholders for all gallery covers in parallel
+  const blurMap = new Map<string, string>();
+  const blurResults = await Promise.allSettled(
+    (galleries ?? []).map(async (g) => {
+      if (!g.coverImage?.asset?._ref) return null;
+      const dataUrl = await blurUrlFor(g.coverImage);
+      return { ref: g.coverImage.asset._ref, dataUrl };
+    })
+  );
+  for (const result of blurResults) {
+    if (result.status === "fulfilled" && result.value?.dataUrl) {
+      blurMap.set(result.value.ref, result.value.dataUrl);
+    }
+  }
 
   return (
     <div className="animate-fade-in-up pt-[72px]">
@@ -50,6 +65,7 @@ export default async function GalleriesPage() {
                             className="!w-auto !h-auto max-w-full max-h-[60vh]"
                             containerClassName="w-fit h-fit img-desat group-hover:saturate-100 transition-all duration-700 flex justify-center items-center"
                             fill={false}
+                            blurDataURL={gallery.coverImage?.asset?._ref ? blurMap.get(gallery.coverImage.asset._ref) : undefined}
                           />
                         )}
                         {/* Hover info overlay */}
@@ -75,6 +91,7 @@ export default async function GalleriesPage() {
                             className="!w-auto !h-auto max-w-full max-h-[60vh]"
                             containerClassName="w-fit h-fit img-desat group-hover:saturate-100 transition-all duration-700 flex justify-center items-center"
                             fill={false}
+                            blurDataURL={gallery.coverImage?.asset?._ref ? blurMap.get(gallery.coverImage.asset._ref) : undefined}
                           />
                         )}
                         {/* Hover info overlay */}

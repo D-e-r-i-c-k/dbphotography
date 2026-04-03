@@ -2,7 +2,7 @@ import { client, hasSanityProject } from "@/lib/sanity/client";
 import { allEventsQuery } from "@/lib/sanity/queries";
 import type { UpcomingEvent } from "@/lib/sanity/types";
 import Link from "next/link";
-import { urlFor } from "@/lib/sanity/image";
+import { urlFor, blurUrlFor } from "@/lib/sanity/image";
 import { ProtectedCoverImage } from "@/components/gallery/ProtectedCoverImage";
 
 export const metadata = {
@@ -15,6 +15,21 @@ export default async function EventsPage() {
     hasSanityProject
       ? await client.fetch<UpcomingEvent[]>(allEventsQuery)
       : ([] as UpcomingEvent[]);
+
+  // Generate blur placeholders for all event covers in parallel
+  const blurMap = new Map<string, string>();
+  const blurResults = await Promise.allSettled(
+    (events ?? []).map(async (e) => {
+      if (!e.coverImage?.asset?._ref) return null;
+      const dataUrl = await blurUrlFor(e.coverImage);
+      return { ref: e.coverImage.asset._ref, dataUrl };
+    })
+  );
+  for (const result of blurResults) {
+    if (result.status === "fulfilled" && result.value?.dataUrl) {
+      blurMap.set(result.value.ref, result.value.dataUrl);
+    }
+  }
 
   return (
     <div className="animate-fade-in-up pt-[72px]">
@@ -53,6 +68,7 @@ export default async function EventsPage() {
                             src={urlFor(event.coverImage, { w: 600, q: 80 })}
                             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                             containerClassName="h-full w-full img-desat"
+                            blurDataURL={event.coverImage?.asset?._ref ? blurMap.get(event.coverImage.asset._ref) : undefined}
                           />
                         )}
                         {dateStr && (
@@ -82,6 +98,7 @@ export default async function EventsPage() {
                             src={urlFor(event.coverImage, { w: 600, q: 80 })}
                             sizes="(max-width: 640px) 100vw, 33vw"
                             containerClassName="h-full w-full img-desat"
+                            blurDataURL={event.coverImage?.asset?._ref ? blurMap.get(event.coverImage.asset._ref) : undefined}
                           />
                         )}
                       </div>

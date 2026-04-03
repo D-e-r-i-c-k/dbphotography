@@ -1,6 +1,6 @@
 import { client, hasSanityProject } from "@/lib/sanity/client";
 import { galleryBySlugQuery } from "@/lib/sanity/queries";
-import { thumbnailUrlFor, previewUrlFor } from "@/lib/sanity/image";
+import { thumbnailUrlFor, previewUrlFor, blurUrlFor } from "@/lib/sanity/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { GalleryView } from "@/components/gallery/GalleryView";
@@ -54,16 +54,22 @@ export default async function GalleryPage({
   if (!gallery) notFound();
 
   const defaultPrice = gallery.defaultPrice;
+  const rawImages = (gallery.images ?? []).filter((item) => item.asset);
 
-  const images = (gallery.images ?? [])
-    .map((item) => ({
-      thumbnailUrl: item.asset ? thumbnailUrlFor(item) : "",
-      previewUrl: item.asset ? previewUrlFor(item) : "",
-      caption: item.caption,
-      alt: item.alt,
-      price: item.price ?? defaultPrice,
-    }))
-    .filter((img) => img.thumbnailUrl);
+  // Generate blur placeholders for all images in parallel (tiny 20px fetches)
+  const blurResults = await Promise.allSettled(
+    rawImages.map((item) => blurUrlFor(item))
+  );
+
+  const images = rawImages.map((item, i) => ({
+    thumbnailUrl: thumbnailUrlFor(item),
+    previewUrl: previewUrlFor(item),
+    blurDataURL:
+      blurResults[i]?.status === "fulfilled" ? blurResults[i].value : "",
+    caption: item.caption,
+    alt: item.alt,
+    price: item.price ?? defaultPrice,
+  }));
 
   return (
     <div className="animate-fade-in-up pt-[72px]">

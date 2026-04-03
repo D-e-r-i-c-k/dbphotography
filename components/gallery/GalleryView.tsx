@@ -12,7 +12,6 @@ export interface GalleryImageItem {
   caption?: string;
   alt?: string;
   price?: number;
-  isHorizontal?: boolean;
 }
 
 interface GalleryViewProps {
@@ -39,7 +38,6 @@ export function GalleryView({
         gallerySlug,
         originalIndex: i,
         thumbnailUrl: img.thumbnailUrl,
-        isHorizontal: img.isHorizontal,
       })),
     [images, galleryTitle, gallerySlug]
   );
@@ -77,20 +75,7 @@ export function GalleryView({
                   fill={false}
                   blurDataURL={item.blurDataURL}
                 />
-                {/* Dynamic Watermark */}
-                <div
-                  className="pointer-events-none absolute inset-0 overflow-hidden opacity-80"
-                  aria-hidden
-                >
-                  <img
-                    src="/watermark-logo.png"
-                    alt=""
-                    className={`absolute left-1/2 -translate-x-1/2 -translate-y-1/2 max-w-none ${
-                        item.isHorizontal !== false ? "top-[50%] w-[80%]" : "top-[75%] w-[120%]"
-                    }`}
-                    draggable={false}
-                  />
-                </div>
+
               </div>
             </button>
           </div>

@@ -41,18 +41,7 @@ export function ProtectedImage({
         onContextMenu={handleContextMenu}
         style={{ userSelect: "none" }}
       />
-      {/* Watermark in bottom half */}
-      <div
-        className="pointer-events-none absolute inset-0 overflow-hidden opacity-80"
-        aria-hidden
-      >
-        <img
-          src="/watermark-logo.png"
-          alt=""
-          className="absolute top-[50%] left-1/2 -translate-x-1/2 -translate-y-1/2 w-[80%] max-w-none"
-          draggable={false}
-        />
-      </div>
+
     </div>
   );
 }

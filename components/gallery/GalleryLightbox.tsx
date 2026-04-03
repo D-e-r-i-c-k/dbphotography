@@ -19,7 +19,6 @@ export interface LightboxImage {
   gallerySlug?: string;
   originalIndex?: number;
   thumbnailUrl?: string;
-  isHorizontal?: boolean;
 }
 
 interface GalleryLightboxProps {
@@ -63,8 +62,6 @@ export function GalleryLightbox({
   if (images.length === 0) return null;
 
   const current = images[index]!;
-  
-  const isHorizontal = current.isHorizontal !== false;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -96,20 +93,7 @@ export function GalleryLightbox({
               priority
               draggable={false}
             />
-            {/* Dynamic Watermark */}
-            <div
-              className="pointer-events-none absolute inset-0 overflow-hidden opacity-80"
-              aria-hidden
-            >
-              <img
-                src="/watermark-logo.png"
-                alt=""
-                className={`absolute left-1/2 -translate-x-1/2 -translate-y-1/2 max-w-none transition-all duration-300 ${
-                  isHorizontal ? "top-[50%] w-[80%]" : "top-[75%] w-[120%]"
-                }`}
-                draggable={false}
-              />
-            </div>
+
           </div>
           <Button
             type="button"

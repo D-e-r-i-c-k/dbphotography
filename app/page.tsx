@@ -155,6 +155,21 @@ export default async function HomePage() {
         </div>
       </section>
 
+      {/* ═══ Testimonial Ribbon ═══ */}
+      <section className="py-20 border-y border-[rgba(255,255,255,0.05)] bg-[#0C0E15]">
+        <div className="mx-auto max-w-3xl px-8 text-center">
+          <blockquote className="font-display text-[1.6rem] leading-relaxed text-foreground sm:text-[2rem]">
+            &ldquo;{testimonialQuote}&rdquo;
+          </blockquote>
+          <p className="mt-6 text-[0.78rem] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+            {testimonialAuthor}
+            {testimonialDetail && (
+              <span className="font-normal"> — {testimonialDetail}</span>
+            )}
+          </p>
+        </div>
+      </section>
+
       {/* ═══ Recent Galleries ═══ */}
       <section className="animate-fade-in-up delay-3 py-20">
         <div className="mx-auto max-w-[1400px] px-6 lg:px-10">
@@ -188,21 +203,6 @@ export default async function HomePage() {
           >
             All Galleries →
           </Link>
-        </div>
-      </section>
-
-      {/* ═══ Testimonial Ribbon ═══ */}
-      <section className="py-20 border-y border-[rgba(255,255,255,0.05)] bg-[#0C0E15]">
-        <div className="mx-auto max-w-3xl px-8 text-center">
-          <blockquote className="font-display text-[1.6rem] leading-relaxed text-foreground sm:text-[2rem]">
-            &ldquo;{testimonialQuote}&rdquo;
-          </blockquote>
-          <p className="mt-6 text-[0.78rem] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-            {testimonialAuthor}
-            {testimonialDetail && (
-              <span className="font-normal"> — {testimonialDetail}</span>
-            )}
-          </p>
         </div>
       </section>
 

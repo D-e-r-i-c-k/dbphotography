@@ -22,43 +22,142 @@ export function getPayFastUrl(): string {
 /* ------------------------------------------------------------------ */
 
 /**
- * PayFast-specific URL encoding:
- * - Trim whitespace
- * - Spaces → "+"
- * - Uppercase hex escapes (%XX)
+ * The EXACT field order PayFast requires for checkout form signatures.
+ * From: https://developers.payfast.co.za/docs#step_1_form_fields
+ *
+ * Only fields present in the data object will be included.
+ * Fields NOT in this list are appended at the end (future-proofing).
  */
-function pfUrlEncode(value: string): string {
+const PAYFAST_FIELD_ORDER = [
+    // Merchant details
+    "merchant_id",
+    "merchant_key",
+    // URLs
+    "return_url",
+    "cancel_url",
+    "notify_url",
+    // Buyer details
+    "name_first",
+    "name_last",
+    "email_address",
+    "cell_number",
+    // Transaction details
+    "m_payment_id",
+    "amount",
+    "item_name",
+    "item_description",
+    // Custom fields
+    "custom_int1",
+    "custom_int2",
+    "custom_int3",
+    "custom_int4",
+    "custom_int5",
+    "custom_str1",
+    "custom_str2",
+    "custom_str3",
+    "custom_str4",
+    "custom_str5",
+    // Payment options
+    "email_confirmation",
+    "confirmation_address",
+    "payment_method",
+    // Subscription fields
+    "subscription_type",
+    "billing_date",
+    "recurring_amount",
+    "frequency",
+    "cycles",
+    "subscription_notify_email",
+    "subscription_notify_webhook",
+    "subscription_notify_buyer",
+];
+
+/**
+ * PayFast-compatible URL encoding that matches PHP's urlencode().
+ *
+ * PHP's urlencode():
+ *   - Encodes spaces as "+"
+ *   - Encodes everything else per RFC 3986 EXCEPT letters, digits, "-", "_", "."
+ *   - Uses uppercase hex digits (%2F not %2f)
+ *
+ * JavaScript's encodeURIComponent():
+ *   - Encodes spaces as "%20"
+ *   - Does NOT encode: A-Z a-z 0-9 - _ . ! ~ * ' ( )
+ *
+ * So we need to:
+ *   1. Use encodeURIComponent
+ *   2. Replace %20 → +
+ *   3. Encode the chars that JS leaves alone but PHP encodes: ! ' ( ) * ~
+ *   4. Keep hex digits uppercase
+ */
+function phpUrlEncode(value: string): string {
     return encodeURIComponent(value.trim())
         .replace(/%20/g, "+")
+        .replace(/!/g, "%21")
+        .replace(/'/g, "%27")
+        .replace(/\(/g, "%28")
+        .replace(/\)/g, "%29")
+        .replace(/\*/g, "%2A")
+        .replace(/~/g, "%7E")
         .replace(/%[0-9a-f]{2}/gi, (match) => match.toUpperCase());
 }
 
 /**
- * Build the MD5 signature that PayFast expects.
+ * Build the MD5 signature that PayFast expects for checkout form POSTs.
  *
- * From the PayFast docs:
- * 1. Take all the submitted variables and create a "parameter string"
- *    by concatenating key=urlencode(value) pairs in the DOCUMENTED ORDER
- *    (not alphabetical), separated by "&".
- * 2. If a passphrase is set, append "&passphrase=urlencode(passphrase)".
- * 3. MD5 hash the result.
+ * IMPORTANT — PayFast docs state:
+ *   "Do NOT use alphabetical ordering; use the documented field order."
  *
- * The signature is NOT included as a field in the hash computation.
+ * Steps:
+ * 1. Sort fields in DOCUMENTED order (see PAYFAST_FIELD_ORDER).
+ * 2. Build param string: key=urlencode(value) joined by "&", skip blanks.
+ * 3. If a passphrase is configured, append "&passphrase=urlencode(passphrase)".
+ * 4. MD5 hash the whole thing.
  */
 export function generateSignature(
     data: Record<string, string>,
     passphrase?: string
 ): string {
-    // Build the param string from ordered entries (skip blanks)
-    const paramString = Object.entries(data)
-        .filter(([, v]) => v !== "" && v !== undefined)
-        .map(([k, v]) => `${k}=${pfUrlEncode(v)}`)
+    // Order keys per PayFast's documented order
+    const orderedKeys = getOrderedKeys(data);
+
+    // Build the param string (skip empty values)
+    const paramString = orderedKeys
+        .filter((k) => data[k] !== "" && data[k] !== undefined && data[k] !== null)
+        .map((k) => `${k}=${phpUrlEncode(data[k])}`)
         .join("&");
 
-    const withPassphrase =
-        passphrase ? `${paramString}&passphrase=${pfUrlEncode(passphrase)}` : paramString;
+    // Append passphrase if set
+    const toHash = passphrase
+        ? `${paramString}&passphrase=${phpUrlEncode(passphrase)}`
+        : paramString;
 
-    return crypto.createHash("md5").update(withPassphrase).digest("hex");
+    return crypto.createHash("md5").update(toHash).digest("hex");
+}
+
+/**
+ * Return the keys of `data` sorted in PayFast's documented order.
+ * Any keys not in PAYFAST_FIELD_ORDER are placed at the end in
+ * the order they appear in the data object.
+ */
+function getOrderedKeys(data: Record<string, string>): string[] {
+    const dataKeys = new Set(Object.keys(data));
+    const ordered: string[] = [];
+
+    // First: known fields in documented order
+    for (const key of PAYFAST_FIELD_ORDER) {
+        if (dataKeys.has(key)) {
+            ordered.push(key);
+            dataKeys.delete(key);
+        }
+    }
+
+    // Then: any remaining fields (future-proofing)
+    for (const key of dataKeys) {
+        ordered.push(key);
+    }
+
+    return ordered;
 }
 
 /* ------------------------------------------------------------------ */
@@ -71,7 +170,7 @@ export interface PaymentItem {
 }
 
 export interface PaymentFormData {
-    /** The complete set of form fields (including signature). Raw values — browser handles encoding. */
+    /** The complete set of form fields (including signature). */
     fields: Record<string, string>;
     /** The PayFast URL to POST the form to. */
     actionUrl: string;
@@ -80,17 +179,12 @@ export interface PaymentFormData {
 /**
  * Build the full set of form fields for a PayFast payment.
  *
- * Field order follows the PayFast documentation:
- *   1. Merchant details (merchant_id, merchant_key)
- *   2. URLs (return_url, cancel_url, notify_url)
- *   3. Buyer details (optional — omitted here)
- *   4. Transaction details (m_payment_id, amount, item_name)
- *
  * @param paymentId - Unique reference for this payment (e.g. UUID).
  * @param items     - Cart items (title + price in ZAR).
  * @param returnUrl - Where to redirect after success.
  * @param cancelUrl - Where to redirect if cancelled.
  * @param notifyUrl - Webhook URL for ITN.
+ * @param buyerEmail - Optional buyer email.
  */
 export function buildPaymentData(
     paymentId: string,
@@ -110,24 +204,27 @@ export function buildPaymentData(
             ? items[0].title
             : `${items.length} photos`;
 
-    // Field order matters for PayFast signature — follow their documented order
-    // buyer details (email_address) come between notify_url and m_payment_id
+    // Build data object in PayFast's documented field order
     const data: Record<string, string> = {
         merchant_id: merchantId,
         merchant_key: merchantKey,
         return_url: returnUrl,
         cancel_url: cancelUrl,
         notify_url: notifyUrl,
-        ...(buyerEmail ? { email_address: buyerEmail } : {}),
-        m_payment_id: paymentId,
-        amount: total.toFixed(2),
-        item_name: itemName,
     };
 
-    // Generate signature from these fields (passphrase only if it's non-empty)
+    // Buyer details come between notify_url and m_payment_id
+    if (buyerEmail) {
+        data.email_address = buyerEmail;
+    }
+
+    data.m_payment_id = paymentId;
+    data.amount = total.toFixed(2);
+    data.item_name = itemName;
+
+    // Generate signature (passphrase only if it's non-empty)
     const signature = generateSignature(data, passphrase || undefined);
 
-    // Return raw values — the hidden form submission handles encoding
     return {
         fields: { ...data, signature },
         actionUrl: getPayFastUrl(),
@@ -142,30 +239,30 @@ export function buildPaymentData(
  * Validate an incoming ITN from PayFast.
  * Returns true if the signature is valid.
  *
- * IMPORTANT: The incoming `body` is expected to contain DECODED values
- * (as returned by URLSearchParams). PayFast computes the ITN signature
- * from the raw, unencoded values — so we must NOT re-encode them here.
+ * For ITN validation, PayFast sends the fields in their own order
+ * and the signature is computed from that order (excluding the
+ * signature field itself).
  */
 export function validateITNSignature(
     body: Record<string, string>
 ): boolean {
     const passphrase = process.env.PAYFAST_PASSPHRASE || "";
 
-    // Rebuild the param string from all fields EXCEPT "signature"
+    // Extract signature; keep the rest in their original order
     const { signature: receivedSig, ...rest } = body;
 
-    // Use raw values — PayFast signs ITN data without URL encoding
+    // Build param string from all fields EXCEPT "signature",
+    // preserving the order PayFast sent them in.
     const paramString = Object.entries(rest)
         .filter(([, v]) => v !== "" && v !== undefined)
-        .map(([k, v]) => `${k}=${encodeURIComponent(v.trim()).replace(/%20/g, "+")}`)
+        .map(([k, v]) => `${k}=${phpUrlEncode(v)}`)
         .join("&");
 
-    const withPassphrase =
-        passphrase
-            ? `${paramString}&passphrase=${encodeURIComponent(passphrase.trim()).replace(/%20/g, "+")}`
-            : paramString;
+    const toHash = passphrase
+        ? `${paramString}&passphrase=${phpUrlEncode(passphrase)}`
+        : paramString;
 
-    const expectedSig = crypto.createHash("md5").update(withPassphrase).digest("hex");
+    const expectedSig = crypto.createHash("md5").update(toHash).digest("hex");
 
     return expectedSig === receivedSig;
 }

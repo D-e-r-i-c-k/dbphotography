@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Libre_Caslon_Display, Figtree } from "next/font/google";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { CartProvider } from "@/contexts/CartContext";
@@ -35,6 +36,7 @@ export default function RootLayout({
           <main className="flex-1">{children}</main>
           <Footer />
         </CartProvider>
+        <SpeedInsights />
       </body>
     </html>
   );

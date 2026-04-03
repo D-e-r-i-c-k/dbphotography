@@ -57,7 +57,7 @@ export function protectedUrlFor(
  * instead of ~1000ms through the proxy.
  */
 export function thumbnailUrlFor(source: SanityImageSource): string {
-  return urlFor(source, { w: 400, q: 65, fit: "max" });
+  return protectedUrlFor(source, { w: 400, q: 65, fit: "max" });
 }
 
 /**

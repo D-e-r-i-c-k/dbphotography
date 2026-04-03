@@ -61,15 +61,26 @@ export default async function GalleryPage({
     rawImages.map((item) => blurUrlFor(item))
   );
 
-  const images = rawImages.map((item, i) => ({
-    thumbnailUrl: thumbnailUrlFor(item),
-    previewUrl: previewUrlFor(item),
-    blurDataURL:
-      blurResults[i]?.status === "fulfilled" ? blurResults[i].value : "",
-    caption: item.caption,
-    alt: item.alt,
-    price: item.price ?? defaultPrice,
-  }));
+  const images = rawImages.map((item, i) => {
+    let isHorizontal = true;
+    if (item.asset?._ref) {
+      const match = item.asset._ref.match(/-(\d+)x(\d+)-/);
+      if (match) {
+        isHorizontal = parseInt(match[1], 10) > parseInt(match[2], 10);
+      }
+    }
+
+    return {
+      thumbnailUrl: thumbnailUrlFor(item),
+      previewUrl: previewUrlFor(item),
+      blurDataURL:
+        blurResults[i]?.status === "fulfilled" ? blurResults[i].value : "",
+      caption: item.caption,
+      alt: item.alt,
+      price: item.price ?? defaultPrice,
+      isHorizontal,
+    };
+  });
 
   return (
     <div className="animate-fade-in-up pt-[72px]">

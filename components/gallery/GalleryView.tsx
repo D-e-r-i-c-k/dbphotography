@@ -12,6 +12,7 @@ export interface GalleryImageItem {
   caption?: string;
   alt?: string;
   price?: number;
+  isHorizontal?: boolean;
 }
 
 interface GalleryViewProps {
@@ -38,6 +39,7 @@ export function GalleryView({
         gallerySlug,
         originalIndex: i,
         thumbnailUrl: img.thumbnailUrl,
+        isHorizontal: img.isHorizontal,
       })),
     [images, galleryTitle, gallerySlug]
   );
@@ -61,7 +63,7 @@ export function GalleryView({
           <div key={i} className="break-inside-avoid flex w-full justify-center">
             <button
               type="button"
-              className="group block overflow-hidden transition-all hover:ring-2 hover:ring-primary/50 w-fit h-fit rounded-none"
+              className="group block overflow-hidden transition-all w-fit h-fit rounded-none"
               onClick={() => openLightbox(i)}
               aria-label={`View ${item.alt ?? item.caption ?? `Photo ${i + 1}`} full size`}
             >
@@ -70,24 +72,24 @@ export function GalleryView({
                   src={item.thumbnailUrl}
                   alt={item.alt ?? item.caption ?? `Photo ${i + 1}`}
                   sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                  className="!w-auto !h-auto max-w-full max-h-[60vh] transition-transform duration-500 group-hover:scale-[1.02]"
+                  className="!w-auto !h-auto max-w-full max-h-[60vh]"
                   containerClassName="w-fit h-fit flex justify-center items-center"
                   fill={false}
                   blurDataURL={item.blurDataURL}
                 />
-                {/* Repeating watermark overlay */}
+                {/* Dynamic Watermark */}
                 <div
-                  className="pointer-events-none absolute inset-0 grid grid-cols-3 grid-rows-4 items-center justify-items-center overflow-hidden opacity-15"
+                  className="pointer-events-none absolute inset-0 overflow-hidden opacity-80"
                   aria-hidden
                 >
-                  {Array.from({ length: 12 }).map((_, w) => (
-                    <span
-                      key={w}
-                      className="font-display -rotate-[25deg] whitespace-nowrap text-sm sm:text-base font-semibold tracking-[0.25em] text-white drop-shadow-md"
-                    >
-                      PREVIEW
-                    </span>
-                  ))}
+                  <img
+                    src="/watermark-logo.png"
+                    alt=""
+                    className={`absolute left-1/2 -translate-x-1/2 -translate-y-1/2 max-w-none ${
+                        item.isHorizontal !== false ? "top-[50%] w-[80%]" : "top-[75%] w-[120%]"
+                    }`}
+                    draggable={false}
+                  />
                 </div>
               </div>
             </button>

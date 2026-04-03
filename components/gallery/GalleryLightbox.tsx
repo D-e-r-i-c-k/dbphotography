@@ -40,6 +40,20 @@ export function GalleryLightbox({
     setIndex(initialIndex);
   }, [initialIndex, open]);
 
+  // Preload adjacent images inside the lightbox to eliminate wait times when clicking next/prev
+  useEffect(() => {
+    if (open && images.length > 0) {
+      const nextIndex = index >= images.length - 1 ? 0 : index + 1;
+      const prevIndex = index <= 0 ? images.length - 1 : index - 1;
+      
+      const nextImg = new window.Image();
+      nextImg.src = images[nextIndex].src;
+      
+      const prevImg = new window.Image();
+      prevImg.src = images[prevIndex].src;
+    }
+  }, [index, open, images]);
+
   const goPrev = useCallback(() => {
     setIndex((i) => (i <= 0 ? images.length - 1 : i - 1));
   }, [images.length]);

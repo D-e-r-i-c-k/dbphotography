@@ -63,6 +63,10 @@ export function GalleryView({
               type="button"
               className="group block overflow-hidden transition-all w-fit h-fit rounded-none"
               onClick={() => openLightbox(i)}
+              onMouseEnter={() => {
+                const img = new window.Image();
+                img.src = item.previewUrl;
+              }}
               aria-label={`View ${item.alt ?? item.caption ?? `Photo ${i + 1}`} full size`}
             >
               <div className="relative w-fit h-fit overflow-hidden flex justify-center items-center">

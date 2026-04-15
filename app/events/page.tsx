@@ -20,14 +20,14 @@ export default async function EventsPage() {
   const blurMap = new Map<string, string>();
   const blurResults = await Promise.allSettled(
     (events ?? []).map(async (e) => {
-      if (!e.coverImage?.asset?._ref) return null;
+      if (!e.coverImage?.public_id) return null;
       const dataUrl = await blurUrlFor(e.coverImage);
-      return { ref: e.coverImage.asset._ref, dataUrl };
+      return { id: e.coverImage.public_id, dataUrl };
     })
   );
   for (const result of blurResults) {
     if (result.status === "fulfilled" && result.value?.dataUrl) {
-      blurMap.set(result.value.ref, result.value.dataUrl);
+      blurMap.set(result.value.id, result.value.dataUrl);
     }
   }
 
@@ -63,12 +63,12 @@ export default async function EventsPage() {
                       className="group glass-card block overflow-hidden"
                     >
                       <div className="relative aspect-[4/3] overflow-hidden rounded-t-xl bg-muted">
-                        {event.coverImage?.asset && (
+                        {event.coverImage?.public_id && (
                           <ProtectedCoverImage
                             src={urlFor(event.coverImage, { w: 600, q: 80 })}
                             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                             containerClassName="h-full w-full img-desat"
-                            blurDataURL={event.coverImage?.asset?._ref ? blurMap.get(event.coverImage.asset._ref) : undefined}
+                            blurDataURL={event.coverImage?.public_id ? blurMap.get(event.coverImage.public_id) : undefined}
                           />
                         )}
                         {dateStr && (
@@ -93,12 +93,12 @@ export default async function EventsPage() {
                   ) : (
                     <div className="group glass-card overflow-hidden">
                       <div className="relative aspect-[4/3] overflow-hidden rounded-t-xl bg-muted">
-                        {event.coverImage?.asset && (
+                        {event.coverImage?.public_id && (
                           <ProtectedCoverImage
                             src={urlFor(event.coverImage, { w: 600, q: 80 })}
                             sizes="(max-width: 640px) 100vw, 33vw"
                             containerClassName="h-full w-full img-desat"
-                            blurDataURL={event.coverImage?.asset?._ref ? blurMap.get(event.coverImage.asset._ref) : undefined}
+                            blurDataURL={event.coverImage?.public_id ? blurMap.get(event.coverImage.public_id) : undefined}
                           />
                         )}
                       </div>

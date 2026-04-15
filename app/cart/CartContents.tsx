@@ -31,7 +31,7 @@ export function CartContents() {
           email,
           items: items.map((item) => ({
             gallerySlug: item.gallerySlug,
-            imageIndex: item.imageIndex,
+            publicId: item.publicId,
             title: item.title,
             price: item.price,
           })),

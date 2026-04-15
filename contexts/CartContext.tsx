@@ -57,7 +57,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   }, [items, mounted]);
 
   const addItem = useCallback((item: Omit<CartItem, "id">) => {
-    const id = `${item.gallerySlug}-${item.imageIndex}`;
+    const id = `${item.gallerySlug}-${item.publicId}`;
     setItems((prev) => {
       if (prev.some((i) => i.id === id)) return prev;
       return [...prev, { ...item, id }];

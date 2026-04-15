@@ -27,21 +27,16 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: message }, { status: 403 });
     }
 
-    // Build full-res Sanity CDN URLs from asset refs
-    // Sanity ref format: "image-<id>-<WxH>-<ext>"
-    const projectId = process.env.NEXT_PUBLIC_SANITY_PROJECT_ID;
-    const dataset = process.env.NEXT_PUBLIC_SANITY_DATASET || "production";
+    // Build Cloudinary URLs from public_ids stored in the token ref
+    const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || process.env.CLOUDINARY_CLOUD_NAME;
 
     const imageUrls = payload.assets.map((asset, i) => {
-        // Parse ref: "image-abcdef123-1920x1080-jpg" → id + ext
-        const parts = asset.ref.replace("image-", "").split("-");
-        const ext = parts.pop(); // "jpg"
-        const id = parts.join("-"); // everything before the extension
-        // Prefix with index to prevent duplicate filenames across galleries
+        const ext = asset.format || "jpg";
+        // Prefix with index to prevent duplicate filenames
         const safeTitle = asset.title.replace(/[^a-zA-Z0-9 _-]/g, "");
         const paddedIndex = String(i + 1).padStart(2, "0");
         return {
-            url: `https://cdn.sanity.io/images/${projectId}/${dataset}/${id}.${ext}`,
+            url: `https://res.cloudinary.com/${cloudName}/image/upload/${asset.ref}.${ext}`,
             filename: `${paddedIndex} - ${safeTitle}.${ext}`,
         };
     });

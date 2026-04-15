@@ -17,7 +17,7 @@ export interface LightboxImage {
   caption?: string;
   price?: number;
   gallerySlug?: string;
-  originalIndex?: number;
+  publicId?: string;
   thumbnailUrl?: string;
 }
 
@@ -136,11 +136,11 @@ export function GalleryLightbox({
           </div>
 
           {/* Action Bar */}
-          {current.price != null && current.gallerySlug && current.originalIndex != null && current.thumbnailUrl && (
+          {current.price != null && current.gallerySlug && current.publicId && current.thumbnailUrl && (
             <div className="flex-shrink-0 ml-4">
               <AddToCartButton
                 gallerySlug={current.gallerySlug}
-                imageIndex={current.originalIndex}
+                publicId={current.publicId}
                 title={current.caption ?? current.alt}
                 price={current.price}
                 previewImageUrl={current.thumbnailUrl}

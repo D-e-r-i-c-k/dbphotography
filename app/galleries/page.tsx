@@ -21,14 +21,14 @@ export default async function GalleriesPage() {
   const blurMap = new Map<string, string>();
   const blurResults = await Promise.allSettled(
     (galleries ?? []).map(async (g) => {
-      if (!g.coverImage?.asset?._ref) return null;
+      if (!g.coverImage?.public_id) return null;
       const dataUrl = await blurUrlFor(g.coverImage);
-      return { ref: g.coverImage.asset._ref, dataUrl };
+      return { id: g.coverImage.public_id, dataUrl };
     })
   );
   for (const result of blurResults) {
     if (result.status === "fulfilled" && result.value?.dataUrl) {
-      blurMap.set(result.value.ref, result.value.dataUrl);
+      blurMap.set(result.value.id, result.value.dataUrl);
     }
   }
 
@@ -58,14 +58,14 @@ export default async function GalleriesPage() {
                       className="group block overflow-hidden w-fit h-fit rounded-none"
                     >
                       <div className="relative w-fit h-fit overflow-hidden flex justify-center items-center">
-                        {gallery.coverImage?.asset && (
+                        {gallery.coverImage?.public_id && (
                           <ProtectedCoverImage
                             src={urlFor(gallery.coverImage, { w: 600, q: 80 })}
                             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                             className="!w-auto !h-auto max-w-full max-h-[60vh]"
                             containerClassName="w-fit h-fit img-desat group-hover:saturate-100 transition-all duration-700 flex justify-center items-center"
                             fill={false}
-                            blurDataURL={gallery.coverImage?.asset?._ref ? blurMap.get(gallery.coverImage.asset._ref) : undefined}
+                            blurDataURL={gallery.coverImage?.public_id ? blurMap.get(gallery.coverImage.public_id) : undefined}
                           />
                         )}
                         {/* Hover info overlay */}
@@ -73,25 +73,20 @@ export default async function GalleriesPage() {
                           <p className="font-display text-[1.05rem] text-foreground translate-y-2 group-hover:translate-y-0 transition-transform duration-400">
                             {gallery.title ?? "Untitled gallery"}
                           </p>
-                          {gallery.imageCount != null && (
-                            <p className="text-[0.75rem] text-[#94B8D0] mt-1 translate-y-2 group-hover:translate-y-0 transition-transform duration-400 delay-75">
-                              {gallery.imageCount} photo{gallery.imageCount !== 1 ? "s" : ""}
-                            </p>
-                          )}
                         </div>
                       </div>
                     </Link>
                   ) : (
                     <div className="group block overflow-hidden w-fit h-fit rounded-none">
                       <div className="relative w-fit h-fit overflow-hidden flex justify-center items-center">
-                        {gallery.coverImage?.asset && (
+                        {gallery.coverImage?.public_id && (
                           <ProtectedCoverImage
                             src={urlFor(gallery.coverImage, { w: 600, q: 80 })}
                             sizes="33vw"
                             className="!w-auto !h-auto max-w-full max-h-[60vh]"
                             containerClassName="w-fit h-fit img-desat group-hover:saturate-100 transition-all duration-700 flex justify-center items-center"
                             fill={false}
-                            blurDataURL={gallery.coverImage?.asset?._ref ? blurMap.get(gallery.coverImage.asset._ref) : undefined}
+                            blurDataURL={gallery.coverImage?.public_id ? blurMap.get(gallery.coverImage.public_id) : undefined}
                           />
                         )}
                         {/* Hover info overlay */}
@@ -99,11 +94,6 @@ export default async function GalleriesPage() {
                           <p className="font-display text-[1.05rem] text-foreground translate-y-2 group-hover:translate-y-0 transition-transform duration-400">
                             {gallery.title ?? "Untitled gallery"}
                           </p>
-                          {gallery.imageCount != null && (
-                            <p className="text-[0.75rem] text-[#94B8D0] mt-1 translate-y-2 group-hover:translate-y-0 transition-transform duration-400 delay-75">
-                              {gallery.imageCount} photo{gallery.imageCount !== 1 ? "s" : ""}
-                            </p>
-                          )}
                         </div>
                       </div>
                     </div>

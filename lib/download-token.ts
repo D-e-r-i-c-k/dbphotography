@@ -6,8 +6,8 @@ import crypto from "crypto";
 /* ------------------------------------------------------------------ */
 
 export interface DownloadTokenPayload {
-    /** Sanity image asset references */
-    assets: { ref: string; title: string }[];
+    /** Cloudinary or Sanity image asset references with optional format */
+    assets: { ref: string; title: string; format?: string }[];
     /** Buyer email address */
     email: string;
     /** Payment ID (for audit trail) */
@@ -42,7 +42,7 @@ function sign(payload: string): string {
  * that expires after `ttlHours` (default 72).
  */
 export function createDownloadToken(
-    assets: { ref: string; title: string }[],
+    assets: { ref: string; title: string; format?: string }[],
     email: string,
     paymentId: string,
     ttlHours = 72

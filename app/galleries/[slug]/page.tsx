@@ -4,23 +4,12 @@ import { thumbnailUrlFor, previewUrlFor, blurUrlFor } from "@/lib/sanity/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { GalleryView } from "@/components/gallery/GalleryView";
+import type { RecentGallery } from "@/lib/sanity/types";
+import { fetchImagesFromFolder } from "@/lib/cloudinary";
 
-interface GalleryImage {
-  asset?: { _ref: string };
-  hotspot?: { x: number; y: number; width: number; height: number };
-  crop?: { top: number; bottom: number; left: number; right: number };
-  caption?: string;
-  alt?: string;
-  price?: number;
-}
-
-interface Gallery {
-  _id: string;
-  title?: string;
-  slug?: { current: string };
+// We can just use RecentGallery as the base, but we ensure event includes _id for linking
+interface FullGallery extends RecentGallery {
   event?: { _id: string; title?: string; slug?: { current: string } } | null;
-  defaultPrice?: number;
-  images?: GalleryImage[];
 }
 
 export async function generateMetadata({
@@ -31,7 +20,7 @@ export async function generateMetadata({
   if (!hasSanityProject)
     return { title: "Gallery | DB Photography" };
   const { slug } = await params;
-  const gallery = await client.fetch<Gallery | null>(galleryBySlugQuery, {
+  const gallery = await client.fetch<FullGallery | null>(galleryBySlugQuery, {
     slug,
   });
   return {
@@ -48,29 +37,35 @@ export default async function GalleryPage({
 }) {
   const { slug } = await params;
   if (!hasSanityProject) notFound();
-  const gallery = await client.fetch<Gallery | null>(galleryBySlugQuery, {
+  const gallery = await client.fetch<FullGallery | null>(galleryBySlugQuery, {
     slug,
   });
   if (!gallery) notFound();
 
-  const defaultPrice = gallery.defaultPrice;
-  const rawImages = (gallery.images ?? []).filter((item) => item.asset);
+  const defaultPrice = gallery.defaultPrice ?? 20;
 
-  // Generate blur placeholders for all images in parallel (tiny 20px fetches)
+  let rawImages: any[] = [];
+  if (gallery.cloudinaryFolder) {
+    rawImages = await fetchImagesFromFolder(gallery.cloudinaryFolder);
+  }
+
+  // Generate blur placeholders for the first few images only (avoid heavy parallel fetches)
+  const BLUR_FETCH_LIMIT = 12;
+  const blurFetchCount = Math.min(rawImages.length, BLUR_FETCH_LIMIT);
   const blurResults = await Promise.allSettled(
-    rawImages.map((item) => blurUrlFor(item))
+    rawImages.slice(0, blurFetchCount).map((item) => blurUrlFor(item))
   );
 
   const images = rawImages.map((item, i) => ({
     thumbnailUrl: thumbnailUrlFor(item),
     previewUrl: previewUrlFor(item),
     blurDataURL:
-      blurResults[i]?.status === "fulfilled" ? blurResults[i].value : "",
-    caption: item.caption,
-    alt: item.alt,
-    price: item.price ?? defaultPrice,
+      i < blurFetchCount && blurResults[i]?.status === "fulfilled" ? (blurResults[i] as any).value : "",
+    caption: "", // no captions with folder sync
+    alt: item.public_id.split('/').pop() || "Gallery photo",
+    price: defaultPrice,
+    publicId: item.public_id,
   }));
-
   return (
     <div className="animate-fade-in-up pt-[72px]">
       <div className="mx-auto max-w-[1400px] px-6 lg:px-10 py-12">

@@ -34,40 +34,29 @@ export const galleryType = defineType({
       name: "defaultPrice",
       title: "Default price per photo (ZAR)",
       type: "number",
-      description: "Applied to all photos unless overridden on an individual image.",
+      initialValue: 20,
+      description: "Applied to all photos in this gallery.",
     }),
     defineField({
-      name: "images",
-      title: "Images",
-      type: "array",
-      of: [
-        defineArrayMember({
-          type: "image",
-          options: {
-            hotspot: true,
-            metadata: ["blurhash", "lqip", "palette"],
-          },
-          fields: [
-            {
-              name: "caption",
-              type: "string",
-              title: "Caption",
-            },
-            {
-              name: "alt",
-              type: "string",
-              title: "Alt text (accessibility)",
-            },
-            {
-              name: "price",
-              type: "number",
-              title: "Price (ZAR)",
-              description:
-                "Optional — overrides the gallery default price for this specific photo.",
-            },
-          ],
-        }),
-      ],
+      name: "coverImage",
+      title: "Cover Image",
+      type: "cloudinary.asset",
+      description: "Select the featured image for the gallery card.",
+    }),
+    defineField({
+      name: "coverIndex",
+      title: "Cover image index (0 = first)",
+      type: "number",
+      description: "Zero-based index to select which image in the Cloudinary folder will be used as the cover image. After changing this, run the Cloudinary → Sanity sync to apply.",
+      initialValue: 0,
+      validation: (Rule) => Rule.min(0),
+    }),
+    defineField({
+      name: "cloudinaryFolder",
+      title: "Cloudinary Folder Name",
+      type: "string",
+      description: "The exact folder path in Cloudinary (e.g. 'galleries/wedding-2026'). All photos in this folder will be synced automatically.",
+      validation: (Rule) => Rule.required(),
     }),
   ],
   orderings: [
@@ -75,11 +64,11 @@ export const galleryType = defineType({
     { title: "Title Z–A", name: "titleDesc", by: [{ field: "title", direction: "desc" }] },
   ],
   preview: {
-    select: { title: "title", event: "event.title", media: "images.0" },
-    prepare({ title, event, media }) {
+    select: { title: "title", event: "event.title", media: "coverImage", folder: "cloudinaryFolder", index: "coverIndex" },
+    prepare({ title, event, media, folder, index }) {
       return {
         title: title || "Untitled gallery",
-        subtitle: event ? `Event: ${event}` : "",
+        subtitle: (event ? `Event: ${event}` : "") + (folder ? ` | Folder: ${folder}` : "") + (typeof index === "number" ? ` | cover:${index}` : ""),
         media,
       };
     },

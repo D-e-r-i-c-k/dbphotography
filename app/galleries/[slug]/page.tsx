@@ -49,16 +49,18 @@ export default async function GalleryPage({
     rawImages = await fetchImagesFromFolder(gallery.cloudinaryFolder);
   }
 
-  // Generate blur placeholders for all images in parallel (tiny fetches)
+  // Generate blur placeholders for the first few images only (avoid heavy parallel fetches)
+  const BLUR_FETCH_LIMIT = 12;
+  const blurFetchCount = Math.min(rawImages.length, BLUR_FETCH_LIMIT);
   const blurResults = await Promise.allSettled(
-    rawImages.map((item) => blurUrlFor(item))
+    rawImages.slice(0, blurFetchCount).map((item) => blurUrlFor(item))
   );
 
   const images = rawImages.map((item, i) => ({
     thumbnailUrl: thumbnailUrlFor(item),
     previewUrl: previewUrlFor(item),
     blurDataURL:
-      blurResults[i]?.status === "fulfilled" ? (blurResults[i] as any).value : "",
+      i < blurFetchCount && blurResults[i]?.status === "fulfilled" ? (blurResults[i] as any).value : "",
     caption: "", // no captions with folder sync
     alt: item.public_id.split('/').pop() || "Gallery photo",
     price: defaultPrice,

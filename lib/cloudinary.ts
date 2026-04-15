@@ -24,7 +24,7 @@ function filenameFromPublicId(publicId: string) {
  */
 export async function fetchImagesFromFolder(
   folderPath: string,
-  options?: { sortBy?: "filename" | "created_at" }
+  options?: { sortBy?: "filename" | "created_at"; timeoutMs?: number }
 ): Promise<CloudinaryImage[]> {
   if (!folderPath) return [];
 
@@ -34,8 +34,21 @@ export async function fetchImagesFromFolder(
   try {
     const search = cloudinary.search.expression(`folder:"${cleanPath}" AND resource_type:image`).max_results(500);
 
-    // We'll always fetch the resources and sort client-side for filename ordering
-    const result = await search.execute();
+    // Execute the search but guard against long-running Cloudinary requests.
+    const timeoutMs = options?.timeoutMs ?? 7000;
+    const executePromise = search.execute();
+    let result: any;
+    try {
+      result = await Promise.race([
+        executePromise,
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error("Cloudinary search timeout")), timeoutMs)
+        ),
+      ]);
+    } catch (err) {
+      console.error("Error executing Cloudinary search:", err);
+      return [];
+    }
 
     if (!result.resources || !Array.isArray(result.resources)) {
       return [];

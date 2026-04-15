@@ -65,7 +65,12 @@ export async function blurUrlFor(source: CloudinaryImage | undefined): Promise<s
   });
 
   try {
-    const res = await fetch(url);
+    // Guard the remote fetch with a short timeout to avoid slow server renders
+    const controller = new AbortController();
+    const timeout = 3000; // ms
+    const id = setTimeout(() => controller.abort(), timeout);
+    const res = await fetch(url, { signal: controller.signal });
+    clearTimeout(id);
     if (!res.ok) return "";
     const buffer = await res.arrayBuffer();
     const base64 = Buffer.from(buffer).toString("base64");

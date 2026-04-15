@@ -6,7 +6,7 @@ import { ShoppingBag } from "lucide-react";
 
 interface AddToCartButtonProps {
   gallerySlug: string;
-  imageIndex: number;
+  publicId: string;
   title: string;
   price: number;
   previewImageUrl: string;
@@ -14,19 +14,19 @@ interface AddToCartButtonProps {
 
 export function AddToCartButton({
   gallerySlug,
-  imageIndex,
+  publicId,
   title,
   price,
   previewImageUrl,
 }: AddToCartButtonProps) {
   const { addItem, items } = useCart();
-  const id = `${gallerySlug}-${imageIndex}`;
+  const id = `${gallerySlug}-${publicId}`; // Using publicId to ensure uniqueness even if sorted differently
   const inCart = items.some((i) => i.id === id);
 
   const handleClick = () => {
     addItem({
       gallerySlug,
-      imageIndex,
+      publicId,
       title,
       price,
       previewImageUrl,

@@ -56,7 +56,7 @@ export default async function EventPage({
           ← All events
         </Link>
         <article>
-          {event.coverImage?.asset && (
+          {event.coverImage?.public_id && (
             <ProtectedCoverImage
               src={urlFor(event.coverImage, { w: 1200, q: 85 })}
               priority

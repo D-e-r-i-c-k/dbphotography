@@ -7,7 +7,7 @@ import { galleryBySlugQuery } from "@/lib/sanity/queries";
 
 interface CheckoutItem {
     gallerySlug: string;
-    imageIndex: number;
+    publicId: string;
     title: string;
     price: number;
 }
@@ -18,7 +18,8 @@ interface CheckoutBody {
 }
 
 interface SanityGallery {
-    images?: { asset?: { _ref: string } }[];
+    cloudinaryFolder?: string;
+    defaultPrice?: number;
 }
 
 /**
@@ -69,19 +70,38 @@ export async function POST(request: NextRequest) {
             if (gallery) galleryCache.set(slug, gallery);
         }
 
-        // Build asset list for the download token
-        const assets: { ref: string; title: string }[] = [];
+        // Build asset list for the download token and validate security
+        const assets: { ref: string; title: string; format?: string }[] = [];
         for (const item of body.items) {
             const gallery = galleryCache.get(item.gallerySlug);
-            const image = gallery?.images?.[item.imageIndex];
-            const ref = image?.asset?._ref;
-            if (!ref) {
+            
+            if (!gallery || !gallery.cloudinaryFolder) {
                 return NextResponse.json(
-                    { error: `Image not found: ${item.title}` },
+                    { error: `Gallery not found or inactive for: ${item.title}` },
                     { status: 400 }
                 );
             }
-            assets.push({ ref, title: item.title });
+
+            // Security: Ensure the requested image actually resides in the gallery's Cloudinary folder
+            // This prevents spoofing publicIds from other folders or accounts
+            if (!item.publicId.startsWith(gallery.cloudinaryFolder)) {
+                return NextResponse.json(
+                    { error: `Security validation failed for image: ${item.title}` },
+                    { status: 403 }
+                );
+            }
+
+            // Security: Ensure price hasn't been tampered with
+            const expectedPrice = gallery.defaultPrice ?? 20;
+            if (item.price !== expectedPrice) {
+                return NextResponse.json(
+                    { error: `Price mismatch for image: ${item.title}` },
+                    { status: 400 }
+                );
+            }
+
+            // Force physical downloads to be JPG so they are universally compatible on buyer's computer
+            assets.push({ ref: item.publicId, title: item.title, format: "jpg" });
         }
 
         const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";

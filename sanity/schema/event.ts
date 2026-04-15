@@ -32,8 +32,7 @@ export const eventType = defineType({
     defineField({
       name: "coverImage",
       title: "Cover image",
-      type: "image",
-      options: { hotspot: true },
+      type: "cloudinary.asset",
     }),
     defineField({
       name: "featured",

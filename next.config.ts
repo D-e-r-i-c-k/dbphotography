@@ -9,6 +9,12 @@ const nextConfig: NextConfig = {
         hostname: "cdn.sanity.io",
         pathname: "/images/**",
       },
+      // Cloudinary delivery host (used by next-cloudinary/getCldImageUrl)
+      {
+        protocol: "https",
+        hostname: "res.cloudinary.com",
+        pathname: "/**",
+      },
     ],
     // Prefer WebP for better compression + quality at the same file size
     formats: ["image/webp"],

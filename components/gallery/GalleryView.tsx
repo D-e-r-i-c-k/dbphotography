@@ -12,6 +12,7 @@ export interface GalleryImageItem {
   caption?: string;
   alt?: string;
   price?: number;
+  publicId?: string;
 }
 
 interface GalleryViewProps {
@@ -36,7 +37,7 @@ export function GalleryView({
         caption: img.caption,
         price: img.price,
         gallerySlug,
-        originalIndex: i,
+        publicId: img.publicId,
         thumbnailUrl: img.thumbnailUrl,
       })),
     [images, galleryTitle, gallerySlug]

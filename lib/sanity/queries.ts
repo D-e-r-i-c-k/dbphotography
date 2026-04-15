@@ -16,8 +16,8 @@ export const siteConfigQuery = `
       _id,
       title,
       slug,
-      "imageCount": count(images),
-      "coverImage": images[0]
+      coverImage,
+      cloudinaryFolder
     }
   }
 `;
@@ -40,8 +40,9 @@ export const recentGalleriesQuery = `
     title,
     slug,
     event-> { title, slug },
-    "imageCount": count(images),
-    "coverImage": images[0]
+    coverImage,
+    cloudinaryFolder,
+    defaultPrice
   }
 `;
 
@@ -65,14 +66,8 @@ export const galleryBySlugQuery = `
     slug,
     event-> { _id, title, slug },
     defaultPrice,
-    images[] {
-      asset,
-      hotspot,
-      crop,
-      caption,
-      alt,
-      price
-    }
+    coverImage,
+    cloudinaryFolder
   }
 `;
 
@@ -94,7 +89,8 @@ export const allGalleriesQuery = `
     title,
     slug,
     event-> { title, slug },
-    "imageCount": count(images),
-    "coverImage": images[0]
+    coverImage,
+    cloudinaryFolder,
+    defaultPrice
   }
 `;

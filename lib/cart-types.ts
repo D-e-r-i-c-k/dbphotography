@@ -1,7 +1,7 @@
 export interface CartItem {
   id: string;
   gallerySlug: string;
-  imageIndex: number;
+  publicId: string;
   title: string;
   price: number;
   previewImageUrl: string;

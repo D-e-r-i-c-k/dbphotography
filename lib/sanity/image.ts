@@ -80,4 +80,3 @@ export async function blurUrlFor(source: CloudinaryImage | undefined): Promise<s
     return url; // Fallback to remote URL
   }
 }
-

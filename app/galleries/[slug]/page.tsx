@@ -43,7 +43,7 @@ export default async function GalleryPage({
   if (!gallery) notFound();
 
   const defaultPrice = gallery.defaultPrice ?? 20;
-  
+
   let rawImages: any[] = [];
   if (gallery.cloudinaryFolder) {
     rawImages = await fetchImagesFromFolder(gallery.cloudinaryFolder);

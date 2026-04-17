@@ -17,6 +17,14 @@ type CloudinarySearchResource = {
 
 type CloudinarySearchResponse = {
   resources?: CloudinarySearchResource[];
+  next_cursor?: string;
+  total_count?: number;
+};
+
+export type CloudinaryFolderPage = {
+  images: CloudinaryImage[];
+  totalCount: number;
+  nextCursor?: string;
 };
 
 function getConfiguredCloudName(): string {
@@ -88,24 +96,35 @@ export async function fetchImagesFromFolder(
   }
 
   try {
-    const search = cloudinary.search
-      .expression(`folder:"${cleanPath}" AND resource_type:image`)
-      .max_results(500);
-
     const timeoutMs = options?.timeoutMs ?? 7000;
-    const executePromise = search.execute() as Promise<CloudinarySearchResponse>;
-    const result = await Promise.race<CloudinarySearchResponse>([
-      executePromise,
-      new Promise<CloudinarySearchResponse>((_, reject) =>
-        setTimeout(() => reject(new Error("Cloudinary search timeout")), timeoutMs)
-      ),
-    ]);
+    const mapped: CloudinaryImage[] = [];
+    let nextCursor: string | undefined;
 
-    if (!Array.isArray(result.resources)) {
+    do {
+      const executePromise = cloudinary.search
+        .expression(`folder:"${cleanPath}" AND resource_type:image`)
+        .sort_by("public_id", "asc")
+        .max_results(500)
+        .next_cursor(nextCursor || "")
+        .execute() as Promise<CloudinarySearchResponse>;
+
+      const result = await Promise.race<CloudinarySearchResponse>([
+        executePromise,
+        new Promise<CloudinarySearchResponse>((_, reject) =>
+          setTimeout(() => reject(new Error("Cloudinary search timeout")), timeoutMs)
+        ),
+      ]);
+
+      if (Array.isArray(result.resources)) {
+        mapped.push(...result.resources.map(toCloudinaryImage));
+      }
+
+      nextCursor = result.next_cursor;
+    } while (nextCursor);
+
+    if (mapped.length === 0) {
       return [];
     }
-
-    const mapped = result.resources.map(toCloudinaryImage);
 
     if (options?.sortBy === "created_at") {
       return mapped;
@@ -120,6 +139,76 @@ export async function fetchImagesFromFolder(
   } catch (error) {
     console.error("Error fetching images from Cloudinary folder:", error);
     return [];
+  }
+}
+
+export async function fetchImagesPageFromFolder(
+  folderPath: string,
+  options?: {
+    page?: number;
+    perPage?: number;
+    sortBy?: "filename" | "created_at";
+    timeoutMs?: number;
+  }
+): Promise<CloudinaryFolderPage> {
+  const cleanPath = normalizeFolderPath(folderPath);
+  if (!cleanPath || !hasCloudinaryAdminConfig()) {
+    return { images: [], totalCount: 0 };
+  }
+
+  const page = Math.max(1, options?.page ?? 1);
+  const perPage = Math.min(500, Math.max(1, options?.perPage ?? 50));
+  const timeoutMs = options?.timeoutMs ?? 7000;
+
+  try {
+    let nextCursor: string | undefined;
+    let currentPage = 1;
+    let totalCount = 0;
+
+    while (true) {
+      const executePromise = cloudinary.search
+        .expression(`folder:"${cleanPath}" AND resource_type:image`)
+        .sort_by("public_id", "asc")
+        .max_results(perPage)
+        .next_cursor(nextCursor || "")
+        .execute() as Promise<CloudinarySearchResponse>;
+
+      const result = await Promise.race<CloudinarySearchResponse>([
+        executePromise,
+        new Promise<CloudinarySearchResponse>((_, reject) =>
+          setTimeout(() => reject(new Error("Cloudinary search timeout")), timeoutMs)
+        ),
+      ]);
+
+      if (!totalCount) {
+        totalCount = result.total_count ?? 0;
+      }
+
+      if (currentPage === page || !result.next_cursor) {
+        const mapped = Array.isArray(result.resources) ? result.resources.map(toCloudinaryImage) : [];
+        const images =
+          options?.sortBy === "created_at"
+            ? mapped
+            : mapped.sort((a, b) =>
+                filenameFromPublicId(a.public_id).localeCompare(filenameFromPublicId(b.public_id), undefined, {
+                  numeric: true,
+                  sensitivity: "base",
+                })
+              );
+
+        return {
+          images,
+          totalCount,
+          nextCursor: result.next_cursor,
+        };
+      }
+
+      nextCursor = result.next_cursor;
+      currentPage += 1;
+    }
+  } catch (error) {
+    console.error("Error fetching paginated images from Cloudinary folder:", error);
+    return { images: [], totalCount: 0 };
   }
 }
 

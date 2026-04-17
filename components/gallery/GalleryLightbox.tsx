@@ -34,17 +34,14 @@ export function GalleryLightbox({
   onOpenChange,
   initialIndex,
 }: GalleryLightboxProps) {
-  const [index, setIndex] = useState(initialIndex);
-
-  useEffect(() => {
-    setIndex(initialIndex);
-  }, [initialIndex, open]);
+  const [index, setIndex] = useState<number | null>(null);
+  const activeIndex = index ?? initialIndex;
 
   // Preload adjacent images inside the lightbox to eliminate wait times when clicking next/prev
   useEffect(() => {
     if (open && images.length > 0) {
-      const nextIndex = index >= images.length - 1 ? 0 : index + 1;
-      const prevIndex = index <= 0 ? images.length - 1 : index - 1;
+      const nextIndex = activeIndex >= images.length - 1 ? 0 : activeIndex + 1;
+      const prevIndex = activeIndex <= 0 ? images.length - 1 : activeIndex - 1;
       
       const nextImg = new window.Image();
       nextImg.src = images[nextIndex].src;
@@ -52,15 +49,18 @@ export function GalleryLightbox({
       const prevImg = new window.Image();
       prevImg.src = images[prevIndex].src;
     }
-  }, [index, open, images]);
+  }, [activeIndex, open, images]);
 
   const goPrev = useCallback(() => {
-    setIndex((i) => (i <= 0 ? images.length - 1 : i - 1));
-  }, [images.length]);
+    setIndex((i) => {
+      const currentIndex = i ?? initialIndex;
+      return currentIndex <= 0 ? images.length - 1 : currentIndex - 1;
+    });
+  }, [images.length, initialIndex]);
 
   const goNext = useCallback(() => {
-    setIndex((i) => (i >= images.length - 1 ? 0 : i + 1));
-  }, [images.length]);
+    setIndex((i) => ((i ?? initialIndex) >= images.length - 1 ? 0 : (i ?? initialIndex) + 1));
+  }, [images.length, initialIndex]);
 
   useEffect(() => {
     if (!open) return;
@@ -75,13 +75,19 @@ export function GalleryLightbox({
 
   if (images.length === 0) return null;
 
-  const current = images[index]!;
+  const current = images[activeIndex]!;
+  const handleOpenChange = (nextOpen: boolean) => {
+    if (!nextOpen) {
+      setIndex(null);
+    }
+    onOpenChange(nextOpen);
+  };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] max-w-[95vw] border-0 bg-black/95 p-0 focus:outline-none">
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+        <DialogContent className="max-h-[90vh] max-w-[95vw] border-0 bg-black/95 p-0 focus:outline-none">
         <DialogTitle className="sr-only">
-          {current.alt || `Image ${index + 1} of ${images.length}`}
+          {current.alt || `Image ${activeIndex + 1} of ${images.length}`}
         </DialogTitle>
         <div className="relative flex h-[80vh] w-full items-center justify-center">
           <Button
@@ -123,14 +129,14 @@ export function GalleryLightbox({
         <div className="flex w-full items-center justify-between border-t border-white/20 px-6 py-4 text-sm text-white/90">
           <div className="flex flex-col">
             <span className="font-medium text-white">
-              {index + 1} / {images.length}
+              {activeIndex + 1} / {images.length}
             </span>
             {current.caption && (
               <p className="mt-1 text-white/70">{current.caption}</p>
             )}
             {current.price != null && (
               <p className="mt-1 font-semibold text-primary-foreground">
-                ${current.price.toFixed(2)}
+                R {current.price.toFixed(2)}
               </p>
             )}
           </div>

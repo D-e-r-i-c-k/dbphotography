@@ -6,10 +6,21 @@ import {
   upcomingEventsQuery,
   recentGalleriesQuery,
 } from "@/lib/sanity/queries";
-import { urlFor, blurUrlFor } from "@/lib/sanity/image";
+import {
+  cloudinaryBlurDataUrlFor,
+  cloudinaryImageUrlFor,
+  sanityBlurDataUrlFor,
+  sanityImageUrlFor,
+} from "@/lib/sanity/image";
 import { ProtectedCoverImage } from "@/components/gallery/ProtectedCoverImage";
 import { HorizontalMasonry } from "@/components/gallery/HorizontalMasonry";
-import type { SiteConfig, UpcomingEvent, RecentGallery, CloudinaryImage } from "@/lib/sanity/types";
+import type {
+  SiteConfig,
+  UpcomingEvent,
+  RecentGallery,
+  CloudinaryImage,
+  SanityImageAsset,
+} from "@/lib/sanity/types";
 
 /** Map of image _ref → base64 blur data URL */
 type BlurMap = Map<string, string>;
@@ -32,26 +43,31 @@ async function getHomeData() {
 
     // Generate blur placeholders for all cover images in parallel
     const blurMap: BlurMap = new Map();
-    const imageSources: { id: string; source: CloudinaryImage }[] = [];
+    const imageSources: Array<
+      | { id: string; source: SanityImageAsset; kind: "sanity" }
+      | { id: string; source: CloudinaryImage; kind: "cloudinary" }
+    > = [];
 
-    if (siteConfig?.heroImage?.public_id) {
-      imageSources.push({ id: siteConfig.heroImage.public_id, source: siteConfig.heroImage });
+    if (siteConfig?.heroImage?.asset?._ref) {
+      imageSources.push({ id: siteConfig.heroImage.asset._ref, source: siteConfig.heroImage, kind: "sanity" });
     }
     for (const event of upcomingEvents ?? []) {
-      if (event.coverImage?.public_id) {
-        imageSources.push({ id: event.coverImage.public_id, source: event.coverImage });
+      if (event.coverImage?.asset?._ref) {
+        imageSources.push({ id: event.coverImage.asset._ref, source: event.coverImage, kind: "sanity" });
       }
     }
     for (const gallery of recentGalleries ?? []) {
       if (gallery.coverImage?.public_id) {
-        imageSources.push({ id: gallery.coverImage.public_id, source: gallery.coverImage });
+        imageSources.push({ id: gallery.coverImage.public_id, source: gallery.coverImage, kind: "cloudinary" });
       }
     }
 
-    // Fetch all blur placeholders in parallel (tiny images)
     const blurResults = await Promise.allSettled(
-      imageSources.map(async ({ id, source }) => {
-        const dataUrl = await blurUrlFor(source);
+      imageSources.map(async ({ id, source, kind }) => {
+        const dataUrl =
+          kind === "sanity"
+            ? await sanityBlurDataUrlFor(source)
+            : await cloudinaryBlurDataUrlFor(source);
         return { id, dataUrl };
       })
     );
@@ -91,9 +107,9 @@ export default async function HomePage() {
       {/* ═══ Hero ═══ */}
       <section className="animate-hero-reveal relative min-h-[100vh] w-full overflow-hidden bg-[#08090D]">
         {/* Background image with slow zoom */}
-        {heroImage?.public_id && (
+        {heroImage?.asset?._ref && (
           <Image
-            src={urlFor(heroImage, { w: 1920, q: 85 })}
+            src={sanityImageUrlFor(heroImage, { w: 1920, q: 85 })}
             alt=""
             fill
             className="object-cover object-center animate-slow-zoom brightness-[0.35] contrast-[1.15] saturate-[0.7]"
@@ -281,12 +297,12 @@ function EventCard({ event, blurMap }: { event: UpcomingEvent; blurMap: BlurMap 
   const content = (
     <>
       <div className="relative aspect-[3/2] overflow-hidden rounded-t-xl bg-muted">
-        {event.coverImage?.public_id && (
+        {event.coverImage?.asset?._ref && (
           <ProtectedCoverImage
-            src={urlFor(event.coverImage, { w: 600, q: 80 })}
+            src={sanityImageUrlFor(event.coverImage, { w: 600, q: 80 })}
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
             containerClassName="h-full w-full img-desat group-hover:saturate-100 transition-transform duration-700"
-            blurDataURL={event.coverImage?.public_id ? blurMap.get(event.coverImage.public_id) : undefined}
+            blurDataURL={event.coverImage?.asset?._ref ? blurMap.get(event.coverImage.asset._ref) : undefined}
           />
         )}
         {/* Date badge */}
@@ -336,7 +352,7 @@ function GalleryCard({ gallery, className, blurMap }: { gallery: RecentGallery; 
     <div className="relative w-fit h-fit overflow-hidden flex items-center justify-center">
       {gallery.coverImage?.public_id && (
         <ProtectedCoverImage
-          src={urlFor(gallery.coverImage, { w: 600, q: 80 })}
+          src={cloudinaryImageUrlFor(gallery.coverImage, { w: 900, q: 80 })}
           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
           className="!w-auto !h-auto max-w-full max-h-[60vh]"
           containerClassName="w-fit h-fit flex justify-center items-center img-desat group-hover:saturate-100 transition-all duration-700"

@@ -1,10 +1,14 @@
 import { client, hasSanityProject } from "@/lib/sanity/client";
 import { galleryBySlugQuery } from "@/lib/sanity/queries";
-import { thumbnailUrlFor, previewUrlFor, blurUrlFor } from "@/lib/sanity/image";
+import {
+  cloudinaryBlurDataUrlFor,
+  galleryPreviewUrlFor,
+  galleryThumbnailUrlFor,
+} from "@/lib/sanity/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { GalleryView } from "@/components/gallery/GalleryView";
-import type { RecentGallery } from "@/lib/sanity/types";
+import type { CloudinaryImage, RecentGallery } from "@/lib/sanity/types";
 import { fetchImagesFromFolder } from "@/lib/cloudinary";
 
 // We can just use RecentGallery as the base, but we ensure event includes _id for linking
@@ -44,7 +48,7 @@ export default async function GalleryPage({
 
   const defaultPrice = gallery.defaultPrice ?? 20;
 
-  let rawImages: any[] = [];
+  let rawImages: CloudinaryImage[] = [];
   if (gallery.cloudinaryFolder) {
     rawImages = await fetchImagesFromFolder(gallery.cloudinaryFolder);
   }
@@ -53,16 +57,16 @@ export default async function GalleryPage({
   const BLUR_FETCH_LIMIT = 12;
   const blurFetchCount = Math.min(rawImages.length, BLUR_FETCH_LIMIT);
   const blurResults = await Promise.allSettled(
-    rawImages.slice(0, blurFetchCount).map((item) => blurUrlFor(item))
+    rawImages.slice(0, blurFetchCount).map((item) => cloudinaryBlurDataUrlFor(item))
   );
 
   const images = rawImages.map((item, i) => ({
-    thumbnailUrl: thumbnailUrlFor(item),
-    previewUrl: previewUrlFor(item),
+    thumbnailUrl: galleryThumbnailUrlFor(item),
+    previewUrl: galleryPreviewUrlFor(item),
     blurDataURL:
-      i < blurFetchCount && blurResults[i]?.status === "fulfilled" ? (blurResults[i] as any).value : "",
-    caption: "", // no captions with folder sync
-    alt: item.public_id.split('/').pop() || "Gallery photo",
+      i < blurFetchCount && blurResults[i]?.status === "fulfilled" ? blurResults[i].value : "",
+    caption: "",
+    alt: item.public_id.split("/").pop() || "Gallery photo",
     price: defaultPrice,
     publicId: item.public_id,
   }));

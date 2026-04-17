@@ -32,7 +32,7 @@ export const eventType = defineType({
     defineField({
       name: "coverImage",
       title: "Cover image",
-      type: "cloudinary.asset",
+      type: "image",
     }),
     defineField({
       name: "featured",

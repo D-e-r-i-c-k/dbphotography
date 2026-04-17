@@ -2,6 +2,12 @@
 
 import { useEffect, useState } from "react";
 
+type SyncResponse = {
+  folders?: string[];
+  results?: Array<Record<string, unknown>>;
+  error?: string;
+};
+
 export default function CloudinarySyncPage() {
   const [folders, setFolders] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
@@ -16,16 +22,20 @@ export default function CloudinarySyncPage() {
     setMessage(null);
     try {
       const res = await fetch("/api/cloudinary/folders");
-      const data = await res.json();
+      const data = (await res.json()) as SyncResponse;
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to load folders");
+      }
       setFolders(data.folders || []);
-    } catch (err: any) {
-      setMessage("Failed to load folders");
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : "Failed to load folders");
     } finally {
       setLoading(false);
     }
   }
 
   async function syncFolder(folder: string) {
+    setLoading(true);
     setMessage(`Syncing ${folder}...`);
     try {
       const res = await fetch("/api/cloudinary/sync-folders", {
@@ -33,23 +43,34 @@ export default function CloudinarySyncPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ folders: [folder] }),
       });
-      const data = await res.json();
+      const data = (await res.json()) as SyncResponse;
+      if (!res.ok) {
+        throw new Error(data.error || "Sync failed");
+      }
       setMessage(JSON.stringify(data.results || data));
-    } catch (err: any) {
-      setMessage(`Sync failed: ${String(err)}`);
+    } catch (err) {
+      setMessage(`Sync failed: ${err instanceof Error ? err.message : String(err)}`);
+    } finally {
+      setLoading(false);
     }
   }
 
   async function syncAll() {
+    setLoading(true);
     setMessage("Syncing all folders...");
     try {
       const res = await fetch("/api/cloudinary/sync-folders", {
         method: "POST",
       });
-      const data = await res.json();
+      const data = (await res.json()) as SyncResponse;
+      if (!res.ok) {
+        throw new Error(data.error || "Sync failed");
+      }
       setMessage(JSON.stringify(data.results || data));
-    } catch (err: any) {
-      setMessage(`Sync failed: ${String(err)}`);
+    } catch (err) {
+      setMessage(`Sync failed: ${err instanceof Error ? err.message : String(err)}`);
+    } finally {
+      setLoading(false);
     }
   }
 

@@ -2,7 +2,7 @@ import { client, hasSanityProject } from "@/lib/sanity/client";
 import { eventBySlugQuery } from "@/lib/sanity/queries";
 import type { UpcomingEvent } from "@/lib/sanity/types";
 import Link from "next/link";
-import { urlFor } from "@/lib/sanity/image";
+import { sanityImageUrlFor } from "@/lib/sanity/image";
 import { ProtectedCoverImage } from "@/components/gallery/ProtectedCoverImage";
 import { notFound } from "next/navigation";
 
@@ -56,9 +56,9 @@ export default async function EventPage({
           ← All events
         </Link>
         <article>
-          {event.coverImage?.public_id && (
+          {event.coverImage?.asset?._ref && (
             <ProtectedCoverImage
-              src={urlFor(event.coverImage, { w: 1200, q: 85 })}
+              src={sanityImageUrlFor(event.coverImage, { w: 1200, q: 85 })}
               priority
               sizes="(max-width: 768px) 100vw, 768px"
               containerClassName="aspect-[16/10] rounded-xl overflow-hidden"

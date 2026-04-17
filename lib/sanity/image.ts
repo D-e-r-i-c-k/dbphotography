@@ -1,60 +1,106 @@
+import { createImageUrlBuilder } from "@sanity/image-url";
 import { getCldImageUrl } from "next-cloudinary";
-import type { CloudinaryImage } from "./types";
+import type { SanityImageAsset, CloudinaryImage } from "./types";
 
-const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || process.env.CLOUDINARY_CLOUD_NAME;
+const sanityProjectId = process.env.NEXT_PUBLIC_SANITY_PROJECT_ID || "placeholder";
+const sanityDataset = process.env.NEXT_PUBLIC_SANITY_DATASET || "production";
 
-/**
- * Build a Cloudinary URL with optimal defaults.
- * Uses auto-format and auto-quality.
- */
-export function urlFor(
-  source: CloudinaryImage | undefined,
-  options?: { w?: number; h?: number; q?: number; fit?: "fill" | "scale" | "crop" | "pad"; format?: string }
-): string {
-  if (!source?.public_id) return "";
+const sanityBuilder = createImageUrlBuilder({
+  projectId: sanityProjectId,
+  dataset: sanityDataset,
+});
+
+type CloudinaryFit = "fill" | "scale" | "crop" | "pad";
+type ImageOptions = {
+  w?: number;
+  h?: number;
+  q?: number;
+  fit?: CloudinaryFit;
+  format?: "auto" | "jpg" | "png" | "webp" | "avif";
+};
+
+function hasSanityImageAsset(source: SanityImageAsset | undefined): source is SanityImageAsset {
+  return Boolean(source?.asset?._ref);
+}
+
+function hasCloudinaryPublicId(source: CloudinaryImage | undefined): source is CloudinaryImage {
+  return Boolean(source?.public_id);
+}
+
+async function fetchBlurDataUrl(url: string): Promise<string> {
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 3000);
+    const response = await fetch(url, { signal: controller.signal });
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      return "";
+    }
+
+    const buffer = await response.arrayBuffer();
+    const base64 = Buffer.from(buffer).toString("base64");
+    const contentType = response.headers.get("content-type") || "image/jpeg";
+    return `data:${contentType};base64,${base64}`;
+  } catch {
+    return "";
+  }
+}
+
+export function sanityImageUrlFor(source: SanityImageAsset | undefined, options?: ImageOptions): string {
+  if (!hasSanityImageAsset(source)) {
+    return "";
+  }
+
+  let image = sanityBuilder.image(source).auto("format").quality(options?.q ?? 80).fit("max");
+
+  if (options?.w) {
+    image = image.width(options.w);
+  }
+
+  if (options?.h) {
+    image = image.height(options.h);
+  }
+
+  return image.url();
+}
+
+export function cloudinaryImageUrlFor(source: CloudinaryImage | undefined, options?: ImageOptions): string {
+  if (!hasCloudinaryPublicId(source)) {
+    return "";
+  }
 
   return getCldImageUrl({
     src: source.public_id,
     width: options?.w,
     height: options?.h,
-    quality: options?.q || "auto",
-    format: (options?.format as any) || "auto",
-    crop: options?.fit || "scale",
+    quality: options?.q ?? "auto",
+    format: options?.format ?? "auto",
+    crop: options?.fit ?? "scale",
   });
 }
 
-/**
- * Build a URL for thumbnails (gallery grid).
- * Small, fast, optimized.
- */
-export function thumbnailUrlFor(source: CloudinaryImage | undefined): string {
-  return urlFor(source, { w: 600, q: 70, fit: "scale" });
+export function galleryThumbnailUrlFor(source: CloudinaryImage | undefined): string {
+  return cloudinaryImageUrlFor(source, { w: 900, q: 75, fit: "scale", format: "auto" });
 }
 
-/**
- * Build a URL for high-quality lightbox previews.
- */
-export function previewUrlFor(source: CloudinaryImage | undefined): string {
-  // In the future, you can add a watermark overlay here:
-  // overlays: [{ publicId: 'watermark_logo', ... }]
-  return urlFor(source, { w: 1600, q: 80, fit: "scale" });
+export function galleryPreviewUrlFor(source: CloudinaryImage | undefined): string {
+  return cloudinaryImageUrlFor(source, { w: 1800, q: 82, fit: "scale", format: "auto" });
 }
 
-/**
- * Protected URL for downloads or specific views.
- * Currently just an alias for urlFor, but can be updated with signed URLs if needed.
- */
-export function protectedUrlFor(source: CloudinaryImage | undefined, options?: any): string {
-  return urlFor(source, options);
+export function protectedCloudinaryUrlFor(source: CloudinaryImage | undefined, options?: ImageOptions): string {
+  return cloudinaryImageUrlFor(source, options);
 }
 
-/**
- * Generate a tiny blur data URL for use as placeholder.
- * Cloudinary can do this with e_blur:1000 and very low quality/size.
- * We fetch it once to return a data URL or just return the remote URL if the component supports it.
- */
-export async function blurUrlFor(source: CloudinaryImage | undefined): Promise<string> {
-  if (!source?.public_id) return "";
+export async function sanityBlurDataUrlFor(source: SanityImageAsset | undefined): Promise<string> {
+  const url = sanityImageUrlFor(source, { w: 40, q: 20, format: "jpg" });
+  return url ? fetchBlurDataUrl(url) : "";
+}
+
+export async function cloudinaryBlurDataUrlFor(source: CloudinaryImage | undefined): Promise<string> {
+  if (!hasCloudinaryPublicId(source)) {
+    return "";
+  }
 
   const url = getCldImageUrl({
     src: source.public_id,
@@ -64,19 +110,5 @@ export async function blurUrlFor(source: CloudinaryImage | undefined): Promise<s
     format: "jpg",
   });
 
-  try {
-    // Guard the remote fetch with a short timeout to avoid slow server renders
-    const controller = new AbortController();
-    const timeout = 3000; // ms
-    const id = setTimeout(() => controller.abort(), timeout);
-    const res = await fetch(url, { signal: controller.signal });
-    clearTimeout(id);
-    if (!res.ok) return "";
-    const buffer = await res.arrayBuffer();
-    const base64 = Buffer.from(buffer).toString("base64");
-    const contentType = res.headers.get("content-type") || "image/jpeg";
-    return `data:${contentType};base64,${base64}`;
-  } catch {
-    return url; // Fallback to remote URL
-  }
+  return (await fetchBlurDataUrl(url)) || url;
 }

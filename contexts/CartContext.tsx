@@ -6,6 +6,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import type { CartItem } from "@/lib/cart-types";
@@ -44,17 +45,17 @@ function saveCart(items: CartItem[]) {
 }
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
-  const [items, setItems] = useState<CartItem[]>([]);
-  const [mounted, setMounted] = useState(false);
+  const [items, setItems] = useState<CartItem[]>(() => loadCart());
+  const hasHydrated = useRef(false);
 
   useEffect(() => {
-    setItems(loadCart());
-    setMounted(true);
-  }, []);
+    if (hasHydrated.current) {
+      saveCart(items);
+      return;
+    }
 
-  useEffect(() => {
-    if (mounted) saveCart(items);
-  }, [items, mounted]);
+    hasHydrated.current = true;
+  }, [items]);
 
   const addItem = useCallback((item: Omit<CartItem, "id">) => {
     const id = `${item.gallerySlug}-${item.publicId}`;

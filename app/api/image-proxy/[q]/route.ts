@@ -34,7 +34,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         }
 
         const imageBuffer = await res.arrayBuffer();
-        let processedBuffer: any = Buffer.from(new Uint8Array(imageBuffer));
+        let processedBuffer: Buffer<ArrayBufferLike> = Buffer.from(new Uint8Array(imageBuffer));
 
         const watermarkPath = path.join(process.cwd(), "public", "watermark-logo.png");
         
@@ -101,7 +101,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         );
         headers.set("CDN-Cache-Control", "public, max-age=31536000, immutable");
 
-        return new NextResponse(processedBuffer, { headers });
+        return new NextResponse(new Uint8Array(processedBuffer), { headers });
     } catch (err) {
         console.error("[Image Proxy] Error processing image:", err);
         return new NextResponse("Internal Server Error", { status: 500 });

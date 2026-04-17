@@ -2,7 +2,7 @@ import { client, hasSanityProject } from "@/lib/sanity/client";
 import { allGalleriesQuery } from "@/lib/sanity/queries";
 import type { RecentGallery } from "@/lib/sanity/types";
 import Link from "next/link";
-import { urlFor, blurUrlFor } from "@/lib/sanity/image";
+import { cloudinaryBlurDataUrlFor, cloudinaryImageUrlFor } from "@/lib/sanity/image";
 import { ProtectedCoverImage } from "@/components/gallery/ProtectedCoverImage";
 import { HorizontalMasonry } from "@/components/gallery/HorizontalMasonry";
 
@@ -22,7 +22,7 @@ export default async function GalleriesPage() {
   const blurResults = await Promise.allSettled(
     (galleries ?? []).map(async (g) => {
       if (!g.coverImage?.public_id) return null;
-      const dataUrl = await blurUrlFor(g.coverImage);
+      const dataUrl = await cloudinaryBlurDataUrlFor(g.coverImage);
       return { id: g.coverImage.public_id, dataUrl };
     })
   );
@@ -60,7 +60,7 @@ export default async function GalleriesPage() {
                       <div className="relative w-fit h-fit overflow-hidden flex justify-center items-center">
                         {gallery.coverImage?.public_id && (
                           <ProtectedCoverImage
-                            src={urlFor(gallery.coverImage, { w: 600, q: 80 })}
+                            src={cloudinaryImageUrlFor(gallery.coverImage, { w: 900, q: 80 })}
                             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                             className="!w-auto !h-auto max-w-full max-h-[60vh]"
                             containerClassName="w-fit h-fit img-desat group-hover:saturate-100 transition-all duration-700 flex justify-center items-center"
@@ -81,7 +81,7 @@ export default async function GalleriesPage() {
                       <div className="relative w-fit h-fit overflow-hidden flex justify-center items-center">
                         {gallery.coverImage?.public_id && (
                           <ProtectedCoverImage
-                            src={urlFor(gallery.coverImage, { w: 600, q: 80 })}
+                            src={cloudinaryImageUrlFor(gallery.coverImage, { w: 900, q: 80 })}
                             sizes="33vw"
                             className="!w-auto !h-auto max-w-full max-h-[60vh]"
                             containerClassName="w-fit h-fit img-desat group-hover:saturate-100 transition-all duration-700 flex justify-center items-center"

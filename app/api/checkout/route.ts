@@ -3,6 +3,7 @@ import { randomUUID } from "crypto";
 import { buildPaymentData } from "@/lib/payfast";
 import { createDownloadToken } from "@/lib/download-token";
 import { client } from "@/lib/sanity/client";
+import { isPublicIdInFolder } from "@/lib/cloudinary";
 import { galleryBySlugQuery } from "@/lib/sanity/queries";
 
 interface CheckoutItem {
@@ -25,7 +26,7 @@ interface SanityGallery {
 /**
  * POST /api/checkout
  *
- * Receives cart items + buyer email, resolves Sanity asset refs,
+ * Receives cart items + buyer email, validates the Cloudinary assets,
  * generates a download token (JWT), builds PayFast form data,
  * and returns it for auto-submit.
  */
@@ -57,8 +58,6 @@ export async function POST(request: NextRequest) {
             }
         }
 
-        // Resolve Sanity asset refs from gallery slugs + image indices
-        // Group items by gallery to minimize queries
         const gallerySlugs = [...new Set(body.items.map((i) => i.gallerySlug))];
         const galleryCache = new Map<string, SanityGallery>();
 
@@ -70,7 +69,6 @@ export async function POST(request: NextRequest) {
             if (gallery) galleryCache.set(slug, gallery);
         }
 
-        // Build asset list for the download token and validate security
         const assets: { ref: string; title: string; format?: string }[] = [];
         for (const item of body.items) {
             const gallery = galleryCache.get(item.gallerySlug);
@@ -82,16 +80,13 @@ export async function POST(request: NextRequest) {
                 );
             }
 
-            // Security: Ensure the requested image actually resides in the gallery's Cloudinary folder
-            // This prevents spoofing publicIds from other folders or accounts
-            if (!item.publicId.startsWith(gallery.cloudinaryFolder)) {
+            if (!isPublicIdInFolder(item.publicId, gallery.cloudinaryFolder)) {
                 return NextResponse.json(
                     { error: `Security validation failed for image: ${item.title}` },
                     { status: 403 }
                 );
             }
 
-            // Security: Ensure price hasn't been tampered with
             const expectedPrice = gallery.defaultPrice ?? 20;
             if (item.price !== expectedPrice) {
                 return NextResponse.json(
@@ -100,14 +95,12 @@ export async function POST(request: NextRequest) {
                 );
             }
 
-            // Force physical downloads to be JPG so they are universally compatible on buyer's computer
             assets.push({ ref: item.publicId, title: item.title, format: "jpg" });
         }
 
         const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
         const paymentId = randomUUID();
 
-        // Generate download token (72h expiry)
         const downloadToken = createDownloadToken(
             assets,
             body.email,

@@ -59,21 +59,21 @@ export function hasCloudinaryAdminConfig(): boolean {
 export function isPublicIdInFolder(publicId: string, folderPath: string): boolean {
   const normalizedFolder = normalizeFolderPath(folderPath);
   if (!normalizedFolder) return false;
-  
+
   // Normalize the publicId to handle both cases
   const normalizedPublicId = publicId.trim();
-  
+
   // Case 1: publicId has the full path (e.g., "galleries/prestige/image.jpg")
   if (normalizedPublicId.startsWith(`${normalizedFolder}/`)) {
     return true;
   }
-  
+
   // Case 2: publicId is just the filename without folder prefix
   // In this case, accept it as valid as long as it doesn't have a different folder prefix
   if (!normalizedPublicId.includes("/")) {
     return true;
   }
-  
+
   // Case 3: publicId has some folder prefix, but it doesn't match
   return false;
 }
@@ -207,11 +207,11 @@ export async function fetchImagesPageFromFolder(
           options?.sortBy === "created_at"
             ? mapped
             : mapped.sort((a, b) =>
-                filenameFromPublicId(a.public_id).localeCompare(filenameFromPublicId(b.public_id), undefined, {
-                  numeric: true,
-                  sensitivity: "base",
-                })
-              );
+              filenameFromPublicId(a.public_id).localeCompare(filenameFromPublicId(b.public_id), undefined, {
+                numeric: true,
+                sensitivity: "base",
+              })
+            );
 
         return {
           images,

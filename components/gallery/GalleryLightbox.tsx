@@ -42,10 +42,10 @@ export function GalleryLightbox({
     if (open && images.length > 0) {
       const nextIndex = activeIndex >= images.length - 1 ? 0 : activeIndex + 1;
       const prevIndex = activeIndex <= 0 ? images.length - 1 : activeIndex - 1;
-      
+
       const nextImg = new window.Image();
       nextImg.src = images[nextIndex].src;
-      
+
       const prevImg = new window.Image();
       prevImg.src = images[prevIndex].src;
     }
@@ -85,7 +85,7 @@ export function GalleryLightbox({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-        <DialogContent className="max-h-[90vh] max-w-[95vw] border-0 bg-black/95 p-0 focus:outline-none">
+      <DialogContent className="max-h-[90vh] max-w-[95vw] border-0 bg-black/95 p-0 focus:outline-none">
         <DialogTitle className="sr-only">
           {current.alt || `Image ${activeIndex + 1} of ${images.length}`}
         </DialogTitle>

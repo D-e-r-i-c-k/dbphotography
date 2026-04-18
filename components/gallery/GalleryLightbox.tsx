@@ -147,7 +147,7 @@ export function GalleryLightbox({
               <AddToCartButton
                 gallerySlug={current.gallerySlug}
                 publicId={current.publicId}
-                title={current.caption ?? current.alt}
+                title={current.caption || current.alt}
                 price={current.price}
                 previewImageUrl={current.thumbnailUrl}
               />

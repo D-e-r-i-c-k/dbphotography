@@ -20,10 +20,6 @@ export function MobileNav() {
     const toggle = useCallback(() => setOpen((prev) => !prev), []);
 
     useEffect(() => {
-        setOpen(false);
-    }, [pathname]);
-
-    useEffect(() => {
         if (open) {
             document.body.style.overflow = "hidden";
         } else {
@@ -75,6 +71,7 @@ export function MobileNav() {
                         <li key={href}>
                             <Link
                                 href={href}
+                                onClick={() => setOpen(false)}
                                 className={`block rounded-md px-4 py-3 text-sm font-medium uppercase tracking-wide transition-colors ${pathname === href
                                         ? "bg-[#191C26] text-ice"
                                         : "text-muted-foreground hover:bg-[#191C26] hover:text-foreground"

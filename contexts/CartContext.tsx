@@ -6,6 +6,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import type { CartItem } from "@/lib/cart-types";
@@ -45,16 +46,21 @@ function saveCart(items: CartItem[]) {
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
-  const [mounted, setMounted] = useState(false);
+  const [isHydrated, setIsHydrated] = useState(false);
 
   useEffect(() => {
-    setItems(loadCart());
-    setMounted(true);
+    // Load cart from localStorage after hydration
+    const cart = loadCart();
+    setItems(cart);
+    setIsHydrated(true);
   }, []);
 
   useEffect(() => {
-    if (mounted) saveCart(items);
-  }, [items, mounted]);
+    // Only save to localStorage after the component has hydrated
+    if (isHydrated) {
+      saveCart(items);
+    }
+  }, [items, isHydrated]);
 
   const addItem = useCallback((item: Omit<CartItem, "id">) => {
     const id = `${item.gallerySlug}-${item.publicId}`;

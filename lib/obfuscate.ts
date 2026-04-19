@@ -10,8 +10,6 @@ const key = secret.length === 64
     ? Buffer.from(secret, "hex")
     : crypto.createHash('sha256').update(secret).digest();
 
-const IV_LENGTH = 16; // For AES, this is always 16
-
 /**
  * Encrypts a string (e.g., a Sanity CDN URL) into a URL-safe format.
  * Uses a deterministic IV so that the same URL always produces the same encrypted string,

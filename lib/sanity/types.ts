@@ -1,19 +1,26 @@
 /** Minimal types for Sanity responses used on the frontend. */
 
-/** Cloudinary asset data returned by sanity-plugin-cloudinary */
 export interface CloudinaryImage {
   _type: "cloudinary.asset";
   public_id: string;
-  secure_url: string;
-  url: string;
-  width: number;
-  height: number;
-  format: string;
+  secure_url?: string;
+  url?: string;
+  width?: number;
+  height?: number;
+  format?: string;
+}
+
+export interface SanityImageAsset {
+  _type: "image";
+  asset?: {
+    _ref?: string;
+    _type?: "reference";
+  };
 }
 
 export interface SiteConfig {
   siteTitle?: string;
-  heroImage?: CloudinaryImage;
+  heroImage?: SanityImageAsset;
   heroHeadline?: string;
   heroSubheadline?: string;
   testimonialQuote?: string;
@@ -34,7 +41,7 @@ export interface UpcomingEvent {
   date?: string;
   venue?: string;
   description?: string;
-  coverImage?: CloudinaryImage;
+  coverImage?: SanityImageAsset;
   gallery?: { _id: string; slug?: { current: string }; title?: string } | null;
 }
 
@@ -46,4 +53,5 @@ export interface RecentGallery {
   coverImage?: CloudinaryImage;
   cloudinaryFolder?: string;
   defaultPrice?: number;
+  coverIndex?: number;
 }

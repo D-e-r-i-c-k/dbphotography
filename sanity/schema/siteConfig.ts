@@ -21,7 +21,7 @@ export const siteConfigType = defineType({
     defineField({
       name: "heroImage",
       title: "Hero image",
-      type: "cloudinary.asset",
+      type: "image",
       group: "hero",
     }),
     defineField({
